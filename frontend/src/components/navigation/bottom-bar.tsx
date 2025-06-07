@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Search, PlusCircle, User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/auth-context";
+import { Fragment } from "react";
 
 interface NavItemProps {
   href: string;
@@ -14,10 +16,11 @@ interface NavItemProps {
 
 export function BottomBar() {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
 
   return (
     <nav className="max-w-[600px] mx-auto fixed bottom-0 inset-x-0 z-50 h-16 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="h-full grid grid-cols-4">
+      <div className="h-full flex justify-evenly">
         <NavItem
           href="/"
           icon={Home}
@@ -30,18 +33,22 @@ export function BottomBar() {
           label="Search"
           isActive={pathname === "/search"}
         />
-        <NavItem
-          href="/create"
-          icon={PlusCircle}
-          label="Create"
-          isActive={pathname === "/create"}
-        />
-        <NavItem
-          href="/profile"
-          icon={User}
-          label="Profile"
-          isActive={pathname === "/profile"}
-        />
+        {isAuthenticated && (
+          <Fragment>
+            <NavItem
+              href="/create"
+              icon={PlusCircle}
+              label="Create"
+              isActive={pathname === "/create"}
+            />
+            <NavItem
+              href="/profile"
+              icon={User}
+              label="Profile"
+              isActive={pathname === "/profile"}
+            />
+          </Fragment>
+        )}
       </div>
     </nav>
   );
