@@ -157,7 +157,7 @@ export class PostService {
     async findAll(): Promise<Post[]> {
         return this.postRepository.find({
             where: { status: PostStatus.APPROVED },
-            relations: ['user', 'postTags', 'postTags.tag'],
+            relations: ['user', 'comments', 'comments.user', 'likes', 'postTags', 'postTags.tag'],
             order: { createdAt: 'DESC' },
         });
     }
@@ -166,7 +166,7 @@ export class PostService {
         const where = status ? { status } : {};
         return this.postRepository.find({
             where,
-            relations: ['user', 'postTags', 'postTags.tag'],
+            relations: ['user', 'comments', 'comments.user', 'likes', 'postTags', 'postTags.tag'],
             order: { createdAt: 'DESC' },
         });
     }
@@ -181,7 +181,7 @@ export class PostService {
 
         const [posts, total] = await this.postRepository.findAndCount({
             where,
-            relations: ['user', 'postTags', 'postTags.tag'],
+            relations: ['user', 'comments', 'comments.user', 'likes', 'postTags', 'postTags.tag'],
             order: { createdAt: 'DESC' },
             skip,
             take: limit,

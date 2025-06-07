@@ -12,6 +12,7 @@ export class PostResponseDto {
     title: string;
     content: string;
     status: PostStatus;
+    imageUrl: string;
 
     @Transform(({ obj }) => {
         if (obj.postTags && Array.isArray(obj.postTags)) {
@@ -31,6 +32,12 @@ export class PostResponseDto {
 
     createdAt: Date;
     updatedAt: Date;
+
+    @Transform(({ obj }) => obj.likes ? obj.likes.length : 0)
+    likeCount: number;
+
+    @Transform(({ obj }) => obj.comments ? obj.comments.length : 0)
+    commentCount: number;
 
     constructor(partial: Partial<PostResponseDto>) {
         Object.assign(this, partial);
