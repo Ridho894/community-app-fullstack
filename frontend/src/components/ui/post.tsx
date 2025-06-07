@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Post as PostType, Comment } from "@/types/api";
 import { CommentsModal } from "@/components/CommentsModal";
+import { commentKeys, useCommentsByPost } from "@/lib/hooks/use-comments";
 
 interface PostProps {
   post: PostType;
@@ -17,9 +18,6 @@ export function Post({ post }: PostProps) {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
-
   const handleLike = () => {
     if (liked) {
       setLikeCount(likeCount - 1);
@@ -27,69 +25,6 @@ export function Post({ post }: PostProps) {
       setLikeCount(likeCount + 1);
     }
     setLiked(!liked);
-  };
-
-  // Load comments when the modal is opened
-  useEffect(() => {
-    if (isCommentsOpen && (!post.comments || post.comments.length === 0)) {
-      fetchComments();
-    } else if (isCommentsOpen && post.comments) {
-      setComments(post.comments);
-    }
-  }, [isCommentsOpen]);
-
-  // Fetch comments for this post
-  const fetchComments = async () => {
-    if (isLoadingComments) return;
-
-    setIsLoadingComments(true);
-    try {
-      // This is where you would fetch comments from your API
-      // For now, we'll simulate a delay and return mock data
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Mock comments data - replace with real API call
-      const mockComments: Comment[] = [
-        {
-          id: 1,
-          content: "This is amazing! 😍",
-          userId: 2,
-          postId: post.id,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          user: {
-            id: 2,
-            username: "jane_doe",
-            email: "jane@example.com",
-            role: "user",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        },
-        {
-          id: 2,
-          content: "Great post! I love the content 👏",
-          userId: 3,
-          postId: post.id,
-          createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-          updatedAt: new Date(Date.now() - 3600000).toISOString(),
-          user: {
-            id: 3,
-            username: "mark_smith",
-            email: "mark@example.com",
-            role: "user",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          },
-        },
-      ];
-
-      setComments(mockComments);
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    } finally {
-      setIsLoadingComments(false);
-    }
   };
 
   // Format the date
@@ -203,11 +138,9 @@ export function Post({ post }: PostProps) {
       <CommentsModal
         post={{
           id: post.id,
-          comments: comments,
         }}
         isOpen={isCommentsOpen}
         onClose={() => setIsCommentsOpen(false)}
-        isLoading={isLoadingComments}
       />
     </>
   );

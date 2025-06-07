@@ -8,34 +8,56 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Avatar } from "@/components/ui/avatar";
-import { Post, Comment } from "@/types/api";
-import { Loader2 } from "lucide-react";
+import { Loader } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import {
+  commentKeys,
+  useCommentsByPost,
+  useCreateComment,
+} from "@/lib/hooks/use-comments";
 
 interface CommentsModalProps {
   post: {
     id: number;
-    comments: Comment[];
   };
   isOpen: boolean;
   onClose: () => void;
-  isLoading?: boolean;
 }
 
-export function CommentsModal({
-  post,
-  isOpen,
-  onClose,
-  isLoading = false,
-}: CommentsModalProps) {
+export function CommentsModal({ post, isOpen, onClose }: CommentsModalProps) {
   const [commentText, setCommentText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddComment = () => {
-    if (!commentText.trim()) return;
-    // Here you would call your API to add a comment
-    // For now, we'll just clear the input
-    setCommentText("");
+  // Use the mutation hook for creating comments
+  const createCommentMutation = useCreateComment();
+
+  const handleAddComment = async () => {
+    if (!commentText.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      await createCommentMutation.mutateAsync({
+        postId: post.id,
+        content: commentText.trim(),
+      });
+
+      // Clear the input and notify parent component
+      setCommentText("");
+    } catch (error) {
+      console.error("Error adding comment:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const {
+    data: commentsData,
+    isLoading: isLoadingComments,
+    refetch: refetchComments,
+  } = useCommentsByPost(post.id, {
+    queryKey: commentKeys.list(post.id),
+    enabled: isOpen, // Don't fetch on mount, we'll do it when the modal opens
+  });
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -48,13 +70,13 @@ export function CommentsModal({
         </DialogHeader>
 
         <div className="overflow-y-auto flex-1 p-4">
-          {isLoading ? (
+          {isLoadingComments ? (
             <div className="flex justify-center items-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <Loader className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : post.comments && post.comments.length > 0 ? (
+          ) : commentsData?.data && commentsData?.data.length > 0 ? (
             <div className="space-y-4">
-              {post.comments.map((comment) => (
+              {commentsData?.data.map((comment) => (
                 <div key={comment.id} className="flex gap-3">
                   <Avatar className="h-8 w-8 flex-shrink-0">
                     <img
@@ -101,13 +123,18 @@ export function CommentsModal({
                 }
               }}
               autoFocus={isOpen}
+              disabled={isSubmitting}
             />
             <button
               className="text-primary text-sm font-semibold"
               onClick={handleAddComment}
-              disabled={!commentText.trim()}
+              disabled={!commentText.trim() || isSubmitting}
             >
-              Post
+              {isSubmitting ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                "Post"
+              )}
             </button>
           </div>
         </div>
