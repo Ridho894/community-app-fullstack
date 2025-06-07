@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Grid, Heart } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { AvatarImage } from "@radix-ui/react-avatar";
+import { Avatar } from "@/components/ui/avatar";
 
 export default function ProfilePage() {
   const { logout, user } = useAuth();
@@ -18,9 +20,12 @@ export default function ProfilePage() {
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
               {/* Profile Picture */}
 
-              <div className="w-24 h-24 md:w-36 md:h-36 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center text-2xl font-bold">
-                {user?.username?.charAt(0).toUpperCase()}
-              </div>
+              <Avatar className="h-24 w-24">
+                <AvatarImage
+                  src={`https://api.dicebear.com/7.x/initials/svg?seed=${user?.username}`}
+                  alt={user?.username || ""}
+                />
+              </Avatar>
 
               {/* Profile Info */}
               <div className="flex-1">
