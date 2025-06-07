@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, ClassSerializerInterceptor, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query, ClassSerializerInterceptor, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -11,11 +12,16 @@ import { PostResponseDto } from './dto/post-response.dto';
 @UseInterceptors(ClassSerializerInterceptor)
 export class PostController {
     constructor(private readonly postService: PostService) { }
-
+    // 
     @Post()
     @UseGuards(JwtAuthGuard)
-    async create(@Body() createPostDto: CreatePostDto, @Req() req: RequestWithUser) {
-        const post = await this.postService.create(createPostDto, req.user);
+    @UseInterceptors(FileInterceptor('image'))
+    async create(
+        @Body() createPostDto: CreatePostDto,
+        @Req() req: RequestWithUser,
+        @UploadedFile() file: Express.Multer.File,
+    ) {
+        const post = await this.postService.create(createPostDto, req.user, file);
         return new PostResponseDto(post);
     }
 
@@ -37,12 +43,26 @@ export class PostController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
+    @UseInterceptors(FileInterceptor('image'))
     async update(
         @Param('id') id: string,
         @Body() updatePostDto: UpdatePostDto,
         @Req() req: RequestWithUser,
+        @UploadedFile() file?: any
     ) {
-        const post = await this.postService.update(+id, updatePostDto, req.user.id);
+        const post = await this.postService.update(+id, updatePostDto, req.user.id, file);
+        return new PostResponseDto(post);
+    }
+
+    @Post(':id/image')
+    @UseGuards(JwtAuthGuard)
+    @UseInterceptors(FileInterceptor('image'))
+    async updateImage(
+        @Param('id') id: string,
+        @Req() req: RequestWithUser,
+        @UploadedFile() file: any,
+    ) {
+        const post = await this.postService.updateImage(+id, req.user.id, file);
         return new PostResponseDto(post);
     }
 

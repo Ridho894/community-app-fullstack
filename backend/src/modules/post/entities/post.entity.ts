@@ -29,6 +29,9 @@ export class Post {
     })
     status: PostStatus;
 
+    @Column({ nullable: true, name: 'image_url' })
+    imageUrl: string;
+
     @Column({ name: 'user_id' })
     userId: number;
 

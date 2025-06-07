@@ -7,6 +7,8 @@ import { UpdatePostDto } from './dto/update-post.dto';
 import { User } from '../user/entities/user.entity';
 import { Tag } from './entities/tag.entity';
 import { PostTag } from './entities/post-tag.entity';
+import { unlinkSync } from 'fs';
+import { join } from 'path';
 
 @Injectable()
 export class PostService {
@@ -19,13 +21,14 @@ export class PostService {
         private readonly postTagRepository: Repository<PostTag>,
     ) { }
 
-    async create(createPostDto: CreatePostDto, user: User): Promise<Post> {
+    async create(createPostDto: CreatePostDto, user: User, file?: any): Promise<Post> {
         // Create the post without tags first
         const { tags, ...postData } = createPostDto;
 
         const post = this.postRepository.create({
             ...postData,
             userId: user.id,
+            imageUrl: `/uploads/posts/${user.id}/${file.filename}`
         });
 
         // Save the post to get an ID
@@ -40,7 +43,12 @@ export class PostService {
         return this.findOne(savedPost.id);
     }
 
-    async update(id: number, updatePostDto: UpdatePostDto, userId: number): Promise<Post> {
+    async update(
+        id: number,
+        updatePostDto: UpdatePostDto,
+        userId: number,
+        file?: any
+    ): Promise<Post> {
         const post = await this.findOne(id);
 
         if (post.userId !== userId) {
@@ -48,6 +56,21 @@ export class PostService {
         }
 
         const { tags, ...postData } = updatePostDto;
+
+        // If a new image is uploaded, update the imageUrl
+        if (file) {
+            // Delete old image if it exists
+            if (post.imageUrl) {
+                try {
+                    const oldImagePath = join(process.cwd(), post.imageUrl.replace('/uploads', 'uploads'));
+                    unlinkSync(oldImagePath);
+                } catch (error) {
+                    console.error('Error deleting old image:', error);
+                }
+            }
+
+            postData['imageUrl'] = `/uploads/posts/${userId}/${file.filename}`;
+        }
 
         // Update post data
         if (Object.keys(postData).length > 0) {
@@ -64,6 +87,30 @@ export class PostService {
                 await this.handleTags(id, tags);
             }
         }
+
+        return this.findOne(id);
+    }
+
+    async updateImage(id: number, userId: number, file: any): Promise<Post> {
+        const post = await this.findOne(id);
+
+        if (post.userId !== userId) {
+            throw new NotFoundException('Post not found or you do not have permission to update it');
+        }
+
+        // Delete old image if it exists
+        if (post.imageUrl) {
+            try {
+                const oldImagePath = join(process.cwd(), post.imageUrl.replace('/uploads', 'uploads'));
+                unlinkSync(oldImagePath);
+            } catch (error) {
+                console.error('Error deleting old image:', error);
+            }
+        }
+
+        // Update with new image
+        const imageUrl = `/uploads/posts/${userId}/${file.filename}`;
+        await this.postRepository.update(id, { imageUrl });
 
         return this.findOne(id);
     }
@@ -171,6 +218,16 @@ export class PostService {
 
         if (post.userId !== userId) {
             throw new NotFoundException('Post not found or you do not have permission to delete it');
+        }
+
+        // Delete the image file if it exists
+        if (post.imageUrl) {
+            try {
+                const imagePath = join(process.cwd(), post.imageUrl.replace('/uploads', 'uploads'));
+                unlinkSync(imagePath);
+            } catch (error) {
+                console.error('Error deleting image:', error);
+            }
         }
 
         await this.postRepository.delete(id);
