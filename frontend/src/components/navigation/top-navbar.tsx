@@ -16,7 +16,7 @@ export function TopNavbar() {
       <div className="container h-full mx-auto px-4 flex items-center justify-between">
         {/* Logo / App Name */}
         <Link href="/" className="font-bold text-xl">
-          Instagram Feed
+          Community App
         </Link>
 
         {/* Right Side - Notification Icon */}
