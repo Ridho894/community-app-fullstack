@@ -1,14 +1,30 @@
+"use client";
+
+import { useState } from "react";
+import { usePosts } from "@/lib/hooks/use-posts";
 import { Post } from "./post";
-import { mockPosts } from "@/lib/mock-posts";
+import { Loader } from "lucide-react";
 
 export function Feed() {
+  const [page, setPage] = useState(1);
+  const { data, isLoading, isError, error } = usePosts(page);
+
   return (
     <div className="w-full mx-auto px-4 sm:px-6 md:px-8">
-      {/* Instagram-style centered feed */}
       <div className="max-w-[600px] mx-auto flex flex-col gap-6">
-        {mockPosts.map((post) => (
-          <Post key={post.id} post={post} />
-        ))}
+        {isLoading && (
+          <div className="flex justify-center items-center">
+            <Loader className="mr-2 h-4 w-4 animate-spin" />
+          </div>
+        )}
+        {isError && <div>Error: {error.message}</div>}
+        {!isLoading && !isError && (
+          <>
+            {data?.data.map((post) => (
+              <Post key={post.id} post={post} />
+            ))}
+          </>
+        )}
       </div>
     </div>
   );

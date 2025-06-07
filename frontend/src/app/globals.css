@@ -19,6 +19,42 @@
   }
 }
 
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-in {
+  animation-timing-function: ease-out;
+  animation-duration: 300ms;
+}
+
+.animate-out {
+  animation-timing-function: ease-in;
+  animation-duration: 300ms;
+}
+
+.fade-in-0 {
+  animation-name: fade-in;
+}
+
+.fade-out-0 {
+  animation-name: fade-out;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

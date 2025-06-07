@@ -1,19 +1,24 @@
 "use client";
 
 import { Heart, MessageCircle, Share2, MoreHorizontal } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader } from "./card";
-import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
+import { Card, CardContent, CardHeader } from "./card";
+import { Avatar, AvatarImage } from "./avatar";
 import { Button } from "./button";
-import { useState } from "react";
-import { type Post } from "@/lib/mock-posts";
+import { useState, useEffect } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { Post as PostType, Comment } from "@/types/api";
+import { CommentsModal } from "@/components/CommentsModal";
 
 interface PostProps {
-  post: Post;
+  post: PostType;
 }
 
 export function Post({ post }: PostProps) {
   const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(post.likes);
+  const [likeCount, setLikeCount] = useState(post.likeCount || 0);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   const handleLike = () => {
     if (liked) {
@@ -24,106 +29,186 @@ export function Post({ post }: PostProps) {
     setLiked(!liked);
   };
 
+  // Load comments when the modal is opened
+  useEffect(() => {
+    if (isCommentsOpen && (!post.comments || post.comments.length === 0)) {
+      fetchComments();
+    } else if (isCommentsOpen && post.comments) {
+      setComments(post.comments);
+    }
+  }, [isCommentsOpen]);
+
+  // Fetch comments for this post
+  const fetchComments = async () => {
+    if (isLoadingComments) return;
+
+    setIsLoadingComments(true);
+    try {
+      // This is where you would fetch comments from your API
+      // For now, we'll simulate a delay and return mock data
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Mock comments data - replace with real API call
+      const mockComments: Comment[] = [
+        {
+          id: 1,
+          content: "This is amazing! 😍",
+          userId: 2,
+          postId: post.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          user: {
+            id: 2,
+            username: "jane_doe",
+            email: "jane@example.com",
+            role: "user",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        },
+        {
+          id: 2,
+          content: "Great post! I love the content 👏",
+          userId: 3,
+          postId: post.id,
+          createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+          updatedAt: new Date(Date.now() - 3600000).toISOString(),
+          user: {
+            id: 3,
+            username: "mark_smith",
+            email: "mark@example.com",
+            role: "user",
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      ];
+
+      setComments(mockComments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
+  // Format the date
+  const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
+    addSuffix: true,
+  });
+
+  // Extract tags from postTags
+  const tags = post.postTags?.map((pt) => pt.tag.name) || [];
+
   return (
-    <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
-      {/* Post Header */}
-      <CardHeader className="flex flex-row items-center justify-between p-4 space-y-0">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={post.user.avatar} alt={post.user.username} />
-            <AvatarFallback>
-              {post.user.username.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium text-sm">{post.user.username}</p>
+    <>
+      <Card className="border-gray-200 dark:border-gray-800 shadow-sm">
+        {/* Post Header */}
+        <CardHeader className="flex flex-row items-center justify-between p-4 space-y-0">
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-8 w-8">
+              <AvatarImage
+                src={`https://api.dicebear.com/7.x/initials/svg?seed=${post.user.username}`}
+                alt={post.user.username}
+              />
+            </Avatar>
+            <div>
+              <p className="font-medium text-sm">{post.user.username}</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center">
-          <span className="text-xs text-gray-500 mr-2">{post.postedAt}</span>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <MoreHorizontal className="h-5 w-5" />
-          </Button>
-        </div>
-      </CardHeader>
+          <div className="flex items-center">
+            <span className="text-xs text-gray-500 mr-2">{timeAgo}</span>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-5 w-5" />
+            </Button>
+          </div>
+        </CardHeader>
 
-      {/* Post Image */}
-      <div className="relative aspect-square">
-        <img
-          src={post.image}
-          alt="Post content"
-          className="w-full h-full object-cover"
-        />
-      </div>
+        {/* Post Image */}
+        {post.imageUrl && (
+          <div className="relative aspect-square">
+            <img
+              src={`${process.env.NEXT_PUBLIC_API_URL}${post.imageUrl}`}
+              alt={post.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
 
-      {/* Action Bar */}
-      <div className="px-4 py-2 flex items-center space-x-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-9 w-9"
-          onClick={handleLike}
-        >
-          <Heart
-            className={`h-6 w-6 ${liked ? "fill-red-500 text-red-500" : ""}`}
-          />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <MessageCircle className="h-6 w-6" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-9 w-9">
-          <Share2 className="h-6 w-6" />
-        </Button>
-      </div>
-
-      {/* Post Content */}
-      <CardContent className="p-4 pt-0">
-        {/* Like Count */}
-        <p className="font-medium text-sm mb-2">
-          {likeCount.toLocaleString()} likes
-        </p>
-
-        {/* Caption */}
-        <div className="mb-2">
-          <span className="font-medium text-sm mr-2">{post.user.username}</span>
-          <span className="text-sm">{post.caption}</span>
-        </div>
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1 mb-2">
-          {post.tags.map((tag) => (
-            <span key={tag} className="text-blue-500 text-sm">
-              #{tag}
-            </span>
-          ))}
-        </div>
-
-        {/* Comment Count */}
-        <p className="text-gray-500 text-sm">
-          View all {post.comments} comments
-        </p>
-      </CardContent>
-
-      {/* Add Comment (optional) */}
-      <CardFooter className="p-4 pt-0">
-        <div className="w-full flex items-center space-x-2">
-          <Avatar className="h-7 w-7">
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
-          <input
-            type="text"
-            placeholder="Add a comment..."
-            className="flex-1 text-sm bg-transparent focus:outline-none"
-          />
+        {/* Action Bar */}
+        <div className="px-4 py-2 flex items-center space-x-4">
           <Button
             variant="ghost"
-            size="sm"
-            className="text-blue-500 font-medium"
+            size="icon"
+            className="h-9 w-9"
+            onClick={handleLike}
           >
-            Post
+            <Heart
+              className={`h-6 w-6 ${liked ? "fill-red-500 text-red-500" : ""}`}
+            />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => setIsCommentsOpen(true)}
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Share2 className="h-6 w-6" />
           </Button>
         </div>
-      </CardFooter>
-    </Card>
+
+        {/* Post Content */}
+        <CardContent className="p-4 pt-0">
+          {/* Like Count */}
+          <p className="font-medium text-sm mb-2">
+            {likeCount.toLocaleString()} likes
+          </p>
+
+          {/* Title and Content */}
+          <div className="mb-2">
+            <h3 className="font-bold text-base">{post.title}</h3>
+            <div className="mb-2">
+              <span className="font-medium text-sm mr-2">
+                {post.user.username}
+              </span>
+              <span className="text-sm">{post.content}</span>
+            </div>
+          </div>
+
+          {/* Tags */}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {tags.map((tag) => (
+                <span key={tag} className="text-blue-500 text-sm">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Comment Count */}
+          <button
+            className="text-gray-500 text-sm hover:text-gray-700 cursor-pointer"
+            onClick={() => setIsCommentsOpen(true)}
+          >
+            View all {post.commentCount || 0} comments
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* Comments Modal */}
+      <CommentsModal
+        post={{
+          id: post.id,
+          comments: comments,
+        }}
+        isOpen={isCommentsOpen}
+        onClose={() => setIsCommentsOpen(false)}
+        isLoading={isLoadingComments}
+      />
+    </>
   );
 }
