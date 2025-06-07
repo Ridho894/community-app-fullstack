@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
+import { Loader } from "lucide-react";
 
 export default function ProtectedRoute({
   children,
@@ -21,8 +22,8 @@ export default function ProtectedRoute({
   // Show nothing while loading to prevent flash of unauthorized content
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        Loading...
+      <div className="flex justify-center items-center min-h-screen max-w-[600px] mx-auto">
+        <Loader className="mr-2 h-4 w-4 animate-spin" />
       </div>
     );
   }

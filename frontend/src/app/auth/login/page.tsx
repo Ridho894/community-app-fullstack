@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader } from "lucide-react";
 
 // Form validation schema
 const loginSchema = z.object({
@@ -134,7 +134,7 @@ export default function LoginPage() {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
                   Signing in...
                 </>
               ) : (
