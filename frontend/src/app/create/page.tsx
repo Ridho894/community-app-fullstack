@@ -10,7 +10,6 @@ import { AvatarImage } from "@radix-ui/react-avatar";
 import { useAuth } from "@/contexts/auth-context";
 import { useCreatePost } from "@/lib/hooks/use-posts";
 import { useRouter } from "next/navigation";
-import { ApiError } from "@/lib/api-client";
 import Image from "next/image";
 
 export default function CreatePostPage() {
@@ -78,7 +77,7 @@ export default function CreatePostPage() {
           onSuccess: () => {
             router.push("/");
           },
-          onError: (error: ApiError) => {
+          onError: (error: Error) => {
             console.error("Error creating post:", error);
             if (error.message) {
               setError(
@@ -140,6 +139,11 @@ export default function CreatePostPage() {
               value={content}
               onChange={(e) => setContent(e.target.value)}
             ></textarea>
+
+            {/* Hashtag hint */}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Tip: Use hashtags like #example to categorize your post
+            </p>
 
             {/* Upload Preview */}
             <div

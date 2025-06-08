@@ -8,6 +8,7 @@ import { Loader, Search } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/lib/hooks/use-debounce";
+import { HighlightedText } from "@/components/search/highlighted-text";
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,7 +41,7 @@ export default function SearchPage() {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search for posts, titles, content..."
+                placeholder="Search for posts, titles, content or #hashtags..."
                 className="w-full px-4 py-3 pr-10 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -69,33 +70,63 @@ export default function SearchPage() {
                   No posts found matching your search.
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-1 mt-4">
+                <div className="space-y-6 mt-4">
                   {searchResults.data.map((post: PostType) => (
                     <div
                       key={post.id}
-                      className="aspect-square relative group overflow-hidden cursor-pointer"
+                      className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer"
                       onClick={() => handleViewPost(post.id)}
                     >
-                      <div className="absolute inset-0 bg-gray-200 flex justify-center items-center">
-                        {post.imageUrl && (
+                      {/* Post Image */}
+                      {post.imageUrl && (
+                        <div className="aspect-video relative">
                           <Image
                             src={`${process.env.NEXT_PUBLIC_API_URL}${post.imageUrl}`}
                             alt={post.title}
                             fill
                             className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 33vw"
+                            sizes="(max-width: 768px) 100vw, 600px"
                           />
-                        )}
-                      </div>
+                        </div>
+                      )}
 
-                      {/* Overlay with post title (visible on hover) */}
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-2">
-                        <p className="text-white font-medium text-sm truncate">
-                          {post.title}
-                        </p>
-                        <p className="text-white/70 text-xs">
+                      {/* Post Content */}
+                      <div className="p-4">
+                        <h3 className="font-semibold text-lg mb-1">
+                          <HighlightedText
+                            text={post.title}
+                            searchTerm={debouncedSearchTerm}
+                          />
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                           By {post.user.username}
                         </p>
+                        <p className="text-gray-700 dark:text-gray-300 mb-2">
+                          <HighlightedText
+                            text={post.content}
+                            searchTerm={debouncedSearchTerm}
+                          />
+                        </p>
+
+                        {/* Display hashtags */}
+                        {post.postTags && post.postTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-3">
+                            {post.postTags.map((postTag) => (
+                              <span
+                                key={postTag.id}
+                                className={`inline-block px-2 py-1 rounded-full text-xs 
+                                  ${
+                                    debouncedSearchTerm ===
+                                    `#${postTag.tag.name}`
+                                      ? "bg-yellow-200 dark:bg-yellow-800 text-black dark:text-white"
+                                      : "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                                  }`}
+                              >
+                                #{postTag.tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -114,7 +145,7 @@ export default function SearchPage() {
                     <div
                       key={tag}
                       className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
-                      onClick={() => setSearchTerm(tag)}
+                      onClick={() => setSearchTerm(`#${tag}`)}
                     >
                       <span>#{tag}</span>
                       <span className="text-sm text-gray-500">

@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, Like as TypeORMLike, In } from 'typeorm';
 import { Post, PostStatus } from './entities/post.entity';
+import { Tag } from './entities/tag.entity';
+import { PostTag } from './entities/post-tag.entity';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { User } from '../user/entities/user.entity';
-import { Tag } from './entities/tag.entity';
-import { PostTag } from './entities/post-tag.entity';
-import { unlinkSync } from 'fs';
 import { join } from 'path';
+import { unlinkSync } from 'fs';
 import { FilterPostDto } from './dto/filter-post.dto';
 
 @Injectable()
@@ -35,10 +35,13 @@ export class PostService {
         // Save the post to get an ID
         const savedPost = await this.postRepository.save(post);
 
-        // Process tags if provided
+        // Process manual tags if provided
         if (tags && tags.length > 0) {
             await this.handleTags(savedPost.id, tags);
         }
+
+        // Extract hashtags from content
+        await this.processHashtagsFromContent(savedPost);
 
         // Return the post with relations
         return this.findOne(savedPost.id);
@@ -90,6 +93,11 @@ export class PostService {
             if (tags.length > 0) {
                 await this.handleTags(id, tags);
             }
+        }
+
+        // If content was updated, process hashtags
+        if (updatePostDto.content) {
+            await this.processHashtagsFromContent(post);
         }
 
         return this.findOne(id);
@@ -248,12 +256,22 @@ export class PostService {
             queryBuilder.andWhere('post.status = :status', { status: PostStatus.APPROVED });
         }
 
-        // Add keyword search if provided
+        // Check if keyword is a hashtag search (starts with #)
         if (keyword && keyword.trim() !== '') {
-            queryBuilder.andWhere(
-                '(post.title LIKE :keyword OR post.content LIKE :keyword OR user.username LIKE :keyword)',
-                { keyword: `%${keyword.trim()}%` }
-            );
+            if (keyword.trim().startsWith('#')) {
+                // Hashtag search - search for posts with the specific tag
+                const tagName = keyword.trim().substring(1); // Remove the # symbol
+                queryBuilder
+                    .innerJoin('post.postTags', 'pt')
+                    .innerJoin('pt.tag', 't')
+                    .andWhere('t.name = :tagName', { tagName });
+            } else {
+                // Regular keyword search
+                queryBuilder.andWhere(
+                    '(post.title LIKE :keyword OR post.content LIKE :keyword OR user.username LIKE :keyword)',
+                    { keyword: `%${keyword.trim()}%` }
+                );
+            }
         }
 
         // Add tags filter if provided
@@ -384,5 +402,59 @@ export class PostService {
             .take(limit);
 
         return queryBuilder.getManyAndCount();
+    }
+
+    /**
+     * Extract and process hashtags from post content
+     */
+    private async processHashtagsFromContent(post: Post) {
+        // Extract hashtags from content using regex
+        const hashtagRegex = /#(\w+)/g;
+        const content = post.content || '';
+        const matches = content.match(hashtagRegex);
+
+        // If no hashtags found, return early
+        if (!matches) return;
+
+        // Extract tag names (remove the # symbol)
+        const tagNames = matches.map(match => match.substring(1));
+
+        // Remove duplicates
+        const uniqueTags = [...new Set(tagNames)];
+
+        // Process each tag
+        for (const tagName of uniqueTags) {
+            // Skip empty tags
+            if (!tagName.trim()) continue;
+
+            // Check if tag exists
+            let tag = await this.tagRepository.findOne({ where: { name: tagName } });
+
+            // If tag doesn't exist, create it
+            if (!tag) {
+                tag = this.tagRepository.create({ name: tagName });
+                tag = await this.tagRepository.save(tag);
+            }
+
+            // Check if the post-tag relation already exists
+            const existingPostTag = await this.postTagRepository.findOne({
+                where: {
+                    postId: post.id,
+                    tagId: tag.id
+                }
+            });
+
+            // Only create the relation if it doesn't exist
+            if (!existingPostTag) {
+                const postTag = this.postTagRepository.create({
+                    postId: post.id,
+                    tagId: tag.id,
+                    post,
+                    tag
+                });
+
+                await this.postTagRepository.save(postTag);
+            }
+        }
     }
 } 
