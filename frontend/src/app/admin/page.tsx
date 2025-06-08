@@ -1,6 +1,26 @@
-import { Card } from "./components/ui/card";
+"use client";
+
+import { useAuth } from "@/contexts/auth-context";
+import { useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 export default function AdminDashboard() {
+  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const router = useRouter();
+
+  // Redirect non-admin users to home page
+  useEffect(() => {
+    if (isAuthenticated && !isAdmin) {
+      router.push("/");
+    } else if (!isAuthenticated) {
+      router.push("/auth/login");
+    }
+  }, [isAuthenticated, isAdmin, router]);
+
+  if (!isAuthenticated || !isAdmin) {
+    return null; // Don't render anything while redirecting
+  }
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>

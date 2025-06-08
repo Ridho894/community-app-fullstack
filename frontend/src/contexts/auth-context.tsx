@@ -15,12 +15,14 @@ interface User {
   id: string;
   email?: string | null;
   username?: string | null;
+  role?: string | null;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (
     username: string,
@@ -47,8 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: session.user.id,
         email: session.user.email,
         username: session.user.username,
+        role: session.user.role,
       }
     : null;
+
+  // Check if user is admin
+  const isAdmin = user?.role === "admin";
 
   const login = async (email: string, password: string) => {
     try {
@@ -65,7 +71,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (result?.ok) {
-        router.push("/");
+        // Fetch user session to get the role information
+        const session = await fetch("/api/auth/session");
+        const sessionData = await session.json();
+
+        // Redirect based on role
+        if (sessionData?.user?.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -109,7 +124,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Clear any errors when component mounts
     setError(null);
-  }, []);
+
+    // Redirect to admin page if user is admin
+    if (isAuthenticated && user?.role === "admin") {
+      router.push("/admin");
+    }
+  }, [isAuthenticated, user, router]);
 
   return (
     <AuthContext.Provider
@@ -117,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         isLoading,
         isAuthenticated,
+        isAdmin,
         login,
         register,
         logout,

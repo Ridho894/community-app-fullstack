@@ -31,11 +31,12 @@ const handler = NextAuth({
                         throw new Error(data.message || "Authentication failed");
                     }
 
-                    // Return the user object with token
+                    // Return the user object with token and role
                     return {
                         id: data.user.id.toString(),
                         username: data.user.username,
                         email: data.user.email,
+                        role: data.user.role,
                         accessToken: data.token,
                     };
                 } catch (error) {
@@ -47,11 +48,12 @@ const handler = NextAuth({
     ],
     callbacks: {
         async jwt({ token, user }) {
-            // Add access token to the token right after sign in
+            // Add access token and role to the token right after sign in
             if (user) {
                 token.accessToken = user.accessToken;
                 token.id = user.id;
                 token.username = user.username;
+                token.role = user.role;
             }
             return token;
         },
@@ -60,6 +62,7 @@ const handler = NextAuth({
             if (session.user) {
                 session.user.id = token.id as string;
                 session.user.username = token.username as string;
+                session.user.role = token.role as string;
                 session.accessToken = token.accessToken as string;
             }
             return session;

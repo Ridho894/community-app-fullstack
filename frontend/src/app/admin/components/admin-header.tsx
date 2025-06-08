@@ -12,12 +12,13 @@ import {
   Settings,
   ChevronDown,
 } from "lucide-react";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function AdminHeader() {
   const pathname = usePathname();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-
+  const { logout } = useAuth();
   // Extract page title from pathname
   const getPageTitle = () => {
     const path = pathname.split("/").filter(Boolean);
@@ -101,13 +102,13 @@ export default function AdminHeader() {
                 <span>Settings</span>
               </a>
               <div className="my-1 border-t border-gray-200 dark:border-gray-700" />
-              <a
-                href="/logout"
+              <button
+                onClick={logout}
                 className="flex items-center space-x-2 px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <LogOut size={16} />
                 <span>Logout</span>
-              </a>
+              </button>
             </div>
           )}
         </div>
