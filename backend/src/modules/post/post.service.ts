@@ -9,6 +9,7 @@ import { Tag } from './entities/tag.entity';
 import { PostTag } from './entities/post-tag.entity';
 import { unlinkSync } from 'fs';
 import { join } from 'path';
+import { FilterPostDto } from './dto/filter-post.dto';
 
 @Injectable()
 export class PostService {
@@ -21,7 +22,7 @@ export class PostService {
         private readonly postTagRepository: Repository<PostTag>,
     ) { }
 
-    async create(createPostDto: CreatePostDto, user: User, file?: any): Promise<Post> {
+    async create(createPostDto: CreatePostDto, user: User, file: Express.Multer.File): Promise<Post> {
         // Create the post without tags first
         const { tags, ...postData } = createPostDto;
 
@@ -190,6 +191,71 @@ export class PostService {
         return [posts, total];
     }
 
+    async findByLike(userId: number): Promise<Post[]> {
+        return this.postRepository
+            .createQueryBuilder('post')
+            .innerJoin('post.likes', 'like', 'like.userId = :userId', { userId })
+            .leftJoinAndSelect('post.user', 'user')
+            .leftJoinAndSelect('post.comments', 'comments')
+            .leftJoinAndSelect('comments.user', 'commentUser')
+            .leftJoinAndSelect('post.likes', 'postLikes')
+            .leftJoinAndSelect('post.postTags', 'postTags')
+            .leftJoinAndSelect('postTags.tag', 'tag')
+            .orderBy('post.createdAt', 'DESC')
+            .getMany();
+    }
+
+
+    async findByFilter(filterDto: FilterPostDto): Promise<[Post[], number]> {
+        const { page = 1, limit = 10, tags, status } = filterDto;
+        const skip = (page - 1) * limit;
+
+        // Start with a query builder
+        const queryBuilder = this.postRepository.createQueryBuilder('post')
+            .leftJoinAndSelect('post.user', 'user')
+            .leftJoinAndSelect('post.comments', 'comments')
+            .leftJoinAndSelect('comments.user', 'commentUser')
+            .leftJoinAndSelect('post.likes', 'likes')
+            .leftJoinAndSelect('post.postTags', 'postTags')
+            .leftJoinAndSelect('postTags.tag', 'tag')
+            .orderBy('post.createdAt', 'DESC')
+            .skip(skip)
+            .take(limit);
+
+        // Add status filter if provided
+        if (status) {
+            queryBuilder.andWhere('post.status = :status', { status });
+        } else {
+            // Default to approved posts only
+            queryBuilder.andWhere('post.status = :status', { status: PostStatus.APPROVED });
+        }
+
+        // Add tags filter if provided
+        if (tags && tags.length > 0) {
+            queryBuilder
+                .andWhere((qb) => {
+                    const subQuery = qb
+                        .subQuery()
+                        .select('postTag.postId')
+                        .from(PostTag, 'postTag')
+                        .leftJoin('postTag.tag', 'tagEntity')
+                        .where('tagEntity.name IN (:...tags)', { tags })
+                        .groupBy('postTag.postId')
+                        .having('COUNT(DISTINCT tagEntity.name) = :tagCount')
+                        .getQuery();
+
+                    return `post.id IN ${subQuery}`;
+                })
+                .setParameter('tags', tags)
+                .setParameter('tagCount', tags.length);
+        }
+
+        // Execute the query
+        const [posts, total] = await queryBuilder.getManyAndCount();
+
+        return [posts, total];
+    }
+
     async findOne(id: number): Promise<Post> {
         const post = await this.postRepository.findOne({
             where: { id },
@@ -240,5 +306,15 @@ export class PostService {
     async count(status?: PostStatus): Promise<number> {
         const where = status ? { status } : {};
         return this.postRepository.count({ where });
+    }
+
+    async getAllTags(): Promise<{ tags: string[] }> {
+        const tags = await this.tagRepository.find({
+            order: { name: 'ASC' }
+        });
+
+        return {
+            tags: tags.map(tag => tag.name)
+        };
     }
 } 
