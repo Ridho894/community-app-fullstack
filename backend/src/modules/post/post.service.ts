@@ -343,7 +343,7 @@ export class PostService {
 
     async findAllByUser(userId: number): Promise<Post[]> {
         return this.postRepository.find({
-            where: { userId, status: PostStatus.APPROVED },
+            where: { userId },
             relations: ['user', 'comments', 'comments.user', 'likes', 'postTags', 'postTags.tag'],
             order: { createdAt: 'DESC' },
         });

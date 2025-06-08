@@ -162,40 +162,47 @@ export default function ProfilePage() {
                       className="aspect-square relative group overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gray-200 flex justify-center items-center">
-                        {post.imageUrl && (
-                          <Image
-                            src={`${process.env.NEXT_PUBLIC_API_URL}${post.imageUrl}`}
-                            alt={post.title}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, 33vw"
-                          />
-                        )}
+                        <Image
+                          src={`${process.env.NEXT_PUBLIC_API_URL}${post.imageUrl}`}
+                          alt={post.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
                       </div>
 
                       {/* Overlay with buttons (only visible on hover) */}
-                      <div className="absolute inset-0 bg-black/20 bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center">
-                        {activeTab === "posts" && (
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => handleEdit(post.id)}
-                              variant="secondary"
-                              size="lg"
-                              className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              onClick={() => handleDelete(post.id)}
-                              variant="destructive"
-                              size="lg"
-                              className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
+                      {post.status === "approved" && (
+                        <div className="absolute inset-0 bg-black/20 bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center">
+                          {activeTab === "posts" && (
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={() => handleEdit(post.id)}
+                                variant="secondary"
+                                size="lg"
+                                className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                onClick={() => handleDelete(post.id)}
+                                variant="destructive"
+                                size="lg"
+                                className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* if post still pending, the show loader in front of image */}
+                      {post.status === "pending" && (
+                        <div className="absolute bg-black/50 inset-0 flex items-center justify-center">
+                          <Loader className="w-8 h-8 animate-spin text-gray-400" />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
