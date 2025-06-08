@@ -18,6 +18,9 @@ export function useNotifications(page = 1, limit = 10) {
         queryKey: notificationKeys.list(page, limit),
         queryFn: () => notificationApi.getNotifications(page, limit),
         refetchOnWindowFocus: true,
+        refetchOnMount: true,
+        refetchInterval: 15000, // Poll every 15 seconds
+        staleTime: 10000, // Consider data stale after 10 seconds
     });
 }
 
@@ -25,16 +28,13 @@ export function useNotifications(page = 1, limit = 10) {
  * Hook to fetch unread notifications count
  */
 export function useUnreadNotificationsCount() {
-    const { data: notifications } = useNotifications();
-
-    // Calculate unread count from notifications array
-    const unreadCount = notifications ?
-        notifications.data.filter(notification => !notification.read).length : 0;
-
-    return {
-        data: { count: unreadCount },
-        isLoading: !notifications,
-    };
+    return useQuery({
+        queryKey: notificationKeys.unreadCount(),
+        queryFn: () => notificationApi.getUnreadCount(),
+        refetchOnWindowFocus: true,
+        refetchInterval: 15000, // Poll every 15 seconds
+        staleTime: 10000, // Consider data stale after 10 seconds
+    });
 }
 
 /**

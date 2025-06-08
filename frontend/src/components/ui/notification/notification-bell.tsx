@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import {
   Bell,
   CheckCircle,
@@ -22,6 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Notification } from "@/types/api";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Get icon based on notification type
 // export const getNotificationIcon = (type: string) => {
@@ -82,13 +83,24 @@ export const getNotificationIcon = (type: string) => {
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const { data: notifications, isLoading } = useNotifications(1, 4); // Get exactly 4 notifications
+  const queryClient = useQueryClient();
+
+  // Get notifications with optimized settings for real-time updates
+  const { data: notifications, isLoading } = useNotifications(1, 4);
   const { mutate: markAsRead } = useMarkNotificationAsRead();
   const { mutate: markAllAsRead, isPending: isMarkingAllRead } =
     useMarkAllNotificationsAsRead();
-  const { data: unreadCountData } = useUnreadNotificationsCount();
+  const { data: unreadCountData, isLoading: isLoadingCount } =
+    useUnreadNotificationsCount();
   const router = useRouter();
-  console.log(notifications, "notifications");
+
+  // Force a refetch when the dropdown opens
+  useEffect(() => {
+    if (open) {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    }
+  }, [open, queryClient]);
+
   const unreadCount = unreadCountData?.count || 0;
 
   // Show exactly 4 notifications in the dropdown
@@ -165,9 +177,7 @@ export function NotificationBell() {
                   <div
                     key={notification.id}
                     className={`px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${
-                      !notification.read
-                        ? "bg-blue-500 dark:bg-blue-900/20"
-                        : ""
+                      !notification.read ? "bg-blue-50 dark:bg-blue-900/20" : ""
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
