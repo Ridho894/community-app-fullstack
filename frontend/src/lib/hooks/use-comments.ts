@@ -5,7 +5,6 @@ import {
     UseQueryOptions,
 } from '@tanstack/react-query';
 import { commentApi, CommentsResponse } from '../api/comments';
-import { Comment } from '@/types/api';
 
 // Query keys
 export const commentKeys = {

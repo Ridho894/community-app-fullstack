@@ -6,12 +6,12 @@ import { Avatar, AvatarImage } from "./avatar";
 import { Button } from "./button";
 import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Post as PostType, Comment, LikeableType } from "@/types/api";
+import { Post as PostType, LikeableType } from "@/types/api";
 import { CommentsModal } from "@/components/CommentsModal";
-import { commentKeys, useCommentsByPost } from "@/lib/hooks/use-comments";
 import { useToggleLike } from "@/lib/hooks/use-likes";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface PostProps {
   post: PostType;
@@ -92,10 +92,12 @@ export function Post({ post }: PostProps) {
         {/* Post Image */}
         {post.imageUrl && (
           <div className="relative aspect-square">
-            <img
+            <Image
               src={`${process.env.NEXT_PUBLIC_API_URL}${post.imageUrl}`}
               alt={post.title}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 600px"
             />
           </div>
         )}

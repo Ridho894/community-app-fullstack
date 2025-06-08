@@ -5,7 +5,7 @@ import {
     UseQueryOptions,
 } from '@tanstack/react-query';
 import { postApi } from '../api/posts';
-import { CreatePostDto, PostFilterParams, PostsResponse, Post, UpdatePostDto } from '@/types/api';
+import { CreatePostDto, PostFilterParams, PostsResponse, UpdatePostDto } from '@/types/api';
 import { getSession } from 'next-auth/react';
 
 // Query keys

@@ -1,19 +1,25 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { ImageIcon, MapPin, AtSign, Smile } from "lucide-react";
+import { useCallback, useState, useEffect } from "react";
+import { ImageIcon, MapPin, AtSign, Smile, Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SocialLayout } from "@/components/layout/social-layout";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Avatar } from "@/components/ui/avatar";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import { useAuth } from "@/contexts/auth-context";
-import { useCreatePost } from "@/lib/hooks/use-posts";
+import { usePost, useUpdatePost } from "@/lib/hooks/use-posts";
 import { useRouter } from "next/navigation";
-import { ApiError } from "@/lib/api-client";
 import Image from "next/image";
 
-export default function CreatePostPage() {
+// Create a client component that receives the id directly
+interface EditPostPageProps {
+  id: string;
+}
+
+export function EditPostClient({ id }: EditPostPageProps) {
+  const postId = parseInt(id);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -23,6 +29,27 @@ export default function CreatePostPage() {
   const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Fetch post data
+  const { data: postData, isLoading, isError } = usePost(postId);
+
+  // Initialize form with post data when it's loaded
+  useEffect(() => {
+    if (postData?.data) {
+      setTitle(postData.data.title);
+      setContent(postData.data.content);
+
+      // Set the preview from the existing image
+      if (postData.data.imageUrl) {
+        setPreview(
+          `${process.env.NEXT_PUBLIC_API_URL}${postData.data.imageUrl}`
+        );
+      }
+    }
+  }, [postData]);
+
+  const { mutate: updatePost } = useUpdatePost();
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -43,18 +70,9 @@ export default function CreatePostPage() {
     }
   };
 
-  const { user } = useAuth();
-
-  const { mutate: createPost } = useCreatePost();
-
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
       setError("Please provide both title and content for your post");
-      return;
-    }
-
-    if (!selectedFile) {
-      setError("Please upload an image for your post");
       return;
     }
 
@@ -69,17 +87,18 @@ export default function CreatePostPage() {
         content: content.trim(),
       };
 
-      createPost(
+      updatePost(
         {
+          id: postId,
           data: postData,
-          image: selectedFile,
+          image: selectedFile || undefined,
         },
         {
           onSuccess: () => {
-            router.push("/");
+            router.push("/profile");
           },
-          onError: (error: ApiError) => {
-            console.error("Error creating post:", error);
+          onError: (error: Error) => {
+            console.error("Error updating post:", error);
             if (error.message) {
               setError(
                 typeof error.message === "string"
@@ -87,24 +106,57 @@ export default function CreatePostPage() {
                   : JSON.stringify(error.message)
               );
             } else {
-              setError("Failed to create post. Please try again.");
+              setError("Failed to update post. Please try again.");
             }
             setIsSubmitting(false);
           },
         }
       );
     } catch (error) {
-      console.error("Error creating post:", error);
-      setError("Failed to create post. Please try again.");
+      console.error("Error updating post:", error);
+      setError("Failed to update post. Please try again.");
       setIsSubmitting(false);
     }
   };
+
+  // Check if the post belongs to the current user
+  useEffect(() => {
+    if (postData?.data && user && postData.data.userId !== parseInt(user.id)) {
+      router.push("/profile");
+    }
+  }, [postData, user, router]);
+
+  if (isLoading) {
+    return (
+      <ProtectedRoute>
+        <SocialLayout>
+          <div className="max-w-[600px] mx-auto pt-4 pb-12 flex items-center justify-center h-[80vh]">
+            <Loader className="w-8 h-8 animate-spin text-gray-400" />
+          </div>
+        </SocialLayout>
+      </ProtectedRoute>
+    );
+  }
+
+  if (isError || !postData) {
+    return (
+      <ProtectedRoute>
+        <SocialLayout>
+          <div className="max-w-[600px] mx-auto pt-4 pb-12">
+            <div className="bg-red-50 text-red-800 p-4 rounded-md">
+              Post not found or you don&apos;t have permission to edit it.
+            </div>
+          </div>
+        </SocialLayout>
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>
       <SocialLayout>
         <div className="max-w-[600px] mx-auto pt-4 pb-12">
-          <h1 className="text-2xl font-bold mb-6">Create New Post</h1>
+          <h1 className="text-2xl font-bold mb-6">Edit Post</h1>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
             <div className="flex items-center gap-3 mb-6">
@@ -201,18 +253,22 @@ export default function CreatePostPage() {
             </div>
 
             {/* Submit Button */}
-            <Button
-              className="w-full"
-              onClick={handleSubmit}
-              disabled={
-                isSubmitting ||
-                !title.trim() ||
-                !content.trim() ||
-                !selectedFile
-              }
-            >
-              {isSubmitting ? "Creating..." : "Post"}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => router.push("/profile")}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSubmit}
+                disabled={isSubmitting || !title.trim() || !content.trim()}
+              >
+                {isSubmitting ? "Updating..." : "Update Post"}
+              </Button>
+            </div>
           </div>
         </div>
       </SocialLayout>

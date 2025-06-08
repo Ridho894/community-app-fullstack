@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 export default function AdminDashboard() {
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const router = useRouter();
   const { data: stats, isLoading: isLoadingStats } = useAdminStats();
 

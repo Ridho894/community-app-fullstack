@@ -6,6 +6,7 @@ import {
   ReactNode,
   useState,
   useEffect,
+  useMemo,
 } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -43,15 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isLoading = status === "loading";
   const isAuthenticated = status === "authenticated";
 
-  // Extract user from session with proper typing
-  const user: User | null = session?.user
-    ? {
-        id: session.user.id,
-        email: session.user.email,
-        username: session.user.username,
-        role: session.user.role,
-      }
-    : null;
+  // Extract user from session with proper typing, wrapped in useMemo
+  const user = useMemo(() => {
+    return session?.user
+      ? {
+          id: session.user.id,
+          email: session.user.email,
+          username: session.user.username,
+          role: session.user.role,
+        }
+      : null;
+  }, [session?.user]);
 
   // Check if user is admin
   const isAdmin = user?.role === "admin";
@@ -110,9 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Auto login after successful registration
       await login(email, password);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Register error:", error);
-      setError(error.message || "Failed to register. Please try again.");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to register. Please try again.";
+      setError(errorMessage);
     }
   };
 

@@ -112,11 +112,7 @@ export const postApi = {
 
       return apiClient<PostResponse>(`/api/posts/${id}`, {
         method: 'PATCH',
-        headers: {
-          // Remove the Content-Type header so the browser can set it with the boundary
-          'Content-Type': undefined as any,
-        },
-        body: formData as any,
+        body: formData,
       });
     }
 
@@ -134,11 +130,7 @@ export const postApi = {
 
     return apiClient<PostResponse>(`/api/posts/${id}/image`, {
       method: 'POST',
-      headers: {
-        // Remove the Content-Type header so the browser can set it with the boundary
-        'Content-Type': undefined as any,
-      },
-      body: formData as any,
+      body: formData,
     });
   },
 

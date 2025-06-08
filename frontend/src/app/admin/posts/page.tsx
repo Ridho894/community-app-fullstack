@@ -9,7 +9,7 @@ import {
   useUpdatePostStatus,
 } from "@/lib/hooks/use-admin";
 import { Button } from "@/components/ui/button";
-import { PostStatus } from "@/types/api";
+import { Post, PostStatus } from "@/types/api";
 import { format } from "date-fns";
 import {
   Table,
@@ -19,10 +19,9 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import Link from "next/link";
 
 export default function AdminPostsPage() {
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const { data: postsData, isLoading } = useAdminPendingPosts(page, 10);
@@ -42,26 +41,14 @@ export default function AdminPostsPage() {
   }
 
   // Type assertion for API response data
-  const pendingPosts = ((postsData || {}) as any).data || [];
-  const totalPages = ((postsData || {}) as any).meta?.totalPages || 1;
+  const pendingPosts = ((postsData || {}) as { data: Post[] }).data || [];
+  const totalPages =
+    ((postsData || {}) as { meta?: { totalPages: number } }).meta?.totalPages ||
+    1;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Post Management</h1>
-        <div className="flex gap-4">
-          <Link href="/admin">
-            <Button variant="outline">Dashboard</Button>
-          </Link>
-          <Link href="/admin/users">
-            <Button variant="outline">Manage Users</Button>
-          </Link>
-          <Link href="/admin/comments">
-            <Button variant="outline">Manage Comments</Button>
-          </Link>
-        </div>
-      </div>
-
+      <h1 className="text-3xl font-bold tracking-tight">Post Management</h1>
       <Card className="p-6">
         {isLoading ? (
           <div className="text-center py-8">Loading posts...</div>
@@ -80,7 +67,7 @@ export default function AdminPostsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingPosts.map((post) => (
+                {pendingPosts.map((post: Post) => (
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">{post.title}</TableCell>
                     <TableCell>{post.user?.username || "Unknown"}</TableCell>

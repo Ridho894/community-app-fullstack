@@ -15,10 +15,10 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import Link from "next/link";
+import { Comment } from "@/types/api";
 
 export default function AdminCommentsPage() {
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const { data: commentsData, isLoading } = useAdminComments(page, 10);
@@ -38,27 +38,14 @@ export default function AdminCommentsPage() {
   }
 
   // Type assertion for API response data
-  const comments = ((commentsData || {}) as any).data || [];
-  const totalPages = ((commentsData || {}) as any).meta?.totalPages || 1;
+  const comments = ((commentsData || {}) as { data: Comment[] }).data || [];
+  const totalPages =
+    ((commentsData || {}) as { meta?: { totalPages: number } }).meta
+      ?.totalPages || 1;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">
-          Comment Management
-        </h1>
-        <div className="flex gap-4">
-          <Link href="/admin">
-            <Button variant="outline">Dashboard</Button>
-          </Link>
-          <Link href="/admin/users">
-            <Button variant="outline">Manage Users</Button>
-          </Link>
-          <Link href="/admin/posts">
-            <Button variant="outline">Manage Posts</Button>
-          </Link>
-        </div>
-      </div>
+      <h1 className="text-3xl font-bold tracking-tight">Comment Management</h1>
 
       <Card className="p-6">
         {isLoading ? (
@@ -79,7 +66,7 @@ export default function AdminCommentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {comments.map((comment) => (
+                {comments.map((comment: Comment) => (
                   <TableRow key={comment.id}>
                     <TableCell className="max-w-xs truncate">
                       {comment.content}

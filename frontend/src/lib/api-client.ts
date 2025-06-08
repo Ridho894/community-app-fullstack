@@ -2,9 +2,9 @@ import { getSession } from "next-auth/react";
 
 class ApiError extends Error {
     status: number;
-    data: any;
+    data: unknown;
 
-    constructor(status: number, message: string, data: any = null) {
+    constructor(status: number, message: string, data: unknown = null) {
         super(message);
         this.status = status;
         this.data = data;
@@ -57,7 +57,7 @@ export async function apiClient<T>(
         let data;
         try {
             data = await response.json();
-        } catch (e) {
+        } catch {
             // If not JSON, get text content
             const textContent = await response.text();
             data = { message: textContent };

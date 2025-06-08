@@ -15,10 +15,9 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import Link from "next/link";
 
 export default function AdminUsersPage() {
-  const { user, isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin } = useAuth();
   const router = useRouter();
   const [page, setPage] = useState(1);
   const { data: usersData, isLoading } = useAdminUsers(page, 10);
@@ -38,20 +37,7 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-        <div className="flex gap-4">
-          <Link href="/admin">
-            <Button variant="outline">Dashboard</Button>
-          </Link>
-          <Link href="/admin/posts">
-            <Button variant="outline">Manage Posts</Button>
-          </Link>
-          <Link href="/admin/comments">
-            <Button variant="outline">Manage Comments</Button>
-          </Link>
-        </div>
-      </div>
+      <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
 
       <Card className="p-6">
         {isLoading ? (

@@ -15,6 +15,7 @@ import {
   useCommentsByPost,
   useCreateComment,
 } from "@/lib/hooks/use-comments";
+import Image from "next/image";
 
 interface CommentsModalProps {
   post: {
@@ -50,14 +51,11 @@ export function CommentsModal({ post, isOpen, onClose }: CommentsModalProps) {
     }
   };
 
-  const {
-    data: commentsData,
-    isLoading: isLoadingComments,
-    refetch: refetchComments,
-  } = useCommentsByPost(post.id, {
-    queryKey: commentKeys.list(post.id),
-    enabled: isOpen, // Don't fetch on mount, we'll do it when the modal opens
-  });
+  const { data: commentsData, isLoading: isLoadingComments } =
+    useCommentsByPost(post.id, {
+      queryKey: commentKeys.list(post.id),
+      enabled: isOpen, // Don't fetch on mount, we'll do it when the modal opens
+    });
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -79,9 +77,11 @@ export function CommentsModal({ post, isOpen, onClose }: CommentsModalProps) {
               {commentsData?.data.map((comment) => (
                 <div key={comment.id} className="flex gap-3">
                   <Avatar className="h-8 w-8 flex-shrink-0">
-                    <img
+                    <Image
                       src={`https://api.dicebear.com/7.x/initials/svg?seed=${comment.user.username}`}
                       alt={comment.user.username}
+                      width={32}
+                      height={32}
                     />
                   </Avatar>
                   <div className="flex-1">

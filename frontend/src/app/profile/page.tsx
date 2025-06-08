@@ -10,10 +10,10 @@ import { AvatarImage } from "@radix-ui/react-avatar";
 import { Avatar } from "@/components/ui/avatar";
 import { useMyPosts } from "@/lib/hooks/use-posts";
 import { Post as PostType } from "@/types/api";
-import { Post } from "@/components/ui/post";
 import { useRouter } from "next/navigation";
 import { postApi } from "@/lib/api/posts";
 import { toast } from "sonner";
+import Image from "next/image";
 
 type TabType = "posts" | "liked";
 
@@ -163,10 +163,12 @@ export default function ProfilePage() {
                     >
                       <div className="absolute inset-0 bg-gray-200 flex justify-center items-center">
                         {post.imageUrl && (
-                          <img
+                          <Image
                             src={`${process.env.NEXT_PUBLIC_API_URL}${post.imageUrl}`}
                             alt={post.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, 33vw"
                           />
                         )}
                       </div>

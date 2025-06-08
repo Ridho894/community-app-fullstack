@@ -1,15 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { usePosts } from "@/lib/hooks/use-posts";
 import { Post } from "./post";
 import { Loader } from "lucide-react";
 import { PostStatus } from "@/types/api";
 
 export function Feed() {
-  const [page, setPage] = useState(1);
   const { data, isLoading, isError, error } = usePosts({
-    page: page,
+    page: 1,
     status: PostStatus.APPROVED,
   });
 
