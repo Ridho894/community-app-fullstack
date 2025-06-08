@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { SocialLayout } from "@/components/layout/social-layout";
 import { Button } from "@/components/ui/button";
-import { Grid, Heart, Loader } from "lucide-react";
+import { Grid, Heart, Loader, Edit, Trash2 } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { AvatarImage } from "@radix-ui/react-avatar";
@@ -11,7 +11,9 @@ import { Avatar } from "@/components/ui/avatar";
 import { useMyPosts } from "@/lib/hooks/use-posts";
 import { Post as PostType } from "@/types/api";
 import { Post } from "@/components/ui/post";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { postApi } from "@/lib/api/posts";
+import { toast } from "sonner";
 
 type TabType = "posts" | "liked";
 
@@ -19,6 +21,8 @@ export default function ProfilePage() {
   const { logout, user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("posts");
   const [postCount, setPostCount] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
 
   // Fetch posts based on the active tab
   const {
@@ -27,7 +31,7 @@ export default function ProfilePage() {
     error,
     refetch,
   } = useMyPosts({ type: activeTab === "posts" ? "user" : "like" });
-  console.log(postsData, "postsData");
+
   // Refetch when tab changes or authentication status changes
   useEffect(() => {
     if (isAuthenticated) {
@@ -41,6 +45,28 @@ export default function ProfilePage() {
       setPostCount(postsData.meta.total);
     }
   }, [postsData]);
+
+  // Handle edit post
+  const handleEdit = (postId: number) => {
+    router.push(`/posts/edit/${postId}`);
+  };
+
+  // Handle delete post
+  const handleDelete = async (postId: number) => {
+    if (window.confirm("Are you sure you want to delete this post?")) {
+      try {
+        setIsDeleting(true);
+        await postApi.deletePost(postId);
+        toast.success("Post deleted successfully");
+        refetch(); // Refresh the posts list
+      } catch (error) {
+        console.error("Failed to delete post:", error);
+        toast.error("Failed to delete post");
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
 
   return (
     <ProtectedRoute>
@@ -112,7 +138,7 @@ export default function ProfilePage() {
 
             {/* Posts */}
             <div className="mt-6 space-y-6">
-              {isLoading ? (
+              {isLoading || isDeleting ? (
                 <div className="flex justify-center py-12">
                   <Loader className="w-8 h-8 animate-spin text-gray-400" />
                 </div>
@@ -130,13 +156,44 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-1 mt-4">
-                  {postsData.data.map((post: PostType, index: number) => (
-                    <div className="aspect-square bg-gray-200 flex justify-center items-center">
-                      <img
-                        src={`${process.env.NEXT_PUBLIC_API_URL}${post.imageUrl}`}
-                        alt={post.title}
-                        key={index}
-                      />
+                  {postsData.data.map((post: PostType) => (
+                    <div
+                      key={post.id}
+                      className="aspect-square relative group overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gray-200 flex justify-center items-center">
+                        {post.imageUrl && (
+                          <img
+                            src={`${process.env.NEXT_PUBLIC_API_URL}${post.imageUrl}`}
+                            alt={post.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+
+                      {/* Overlay with buttons (only visible on hover) */}
+                      <div className="absolute inset-0 bg-black/20 bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center">
+                        {activeTab === "posts" && (
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => handleEdit(post.id)}
+                              variant="secondary"
+                              size="icon"
+                              className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={() => handleDelete(post.id)}
+                              variant="destructive"
+                              size="icon"
+                              className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

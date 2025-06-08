@@ -5,7 +5,7 @@ import {
     UseQueryOptions,
 } from '@tanstack/react-query';
 import { postApi } from '../api/posts';
-import { CreatePostDto, PostFilterParams, PostsResponse } from '@/types/api';
+import { CreatePostDto, PostFilterParams, PostsResponse, Post, UpdatePostDto } from '@/types/api';
 import { getSession } from 'next-auth/react';
 
 // Query keys
@@ -14,7 +14,8 @@ export const postKeys = {
     lists: () => [...postKeys.all, 'list'] as const,
     list: (filters: PostFilterParams = {}) => [...postKeys.lists(), filters] as const,
     byUser: () => [...postKeys.all, 'byUser'] as const,
-    userPosts: (filters: PostFilterParams = {}) => [...postKeys.byUser(), filters] as const
+    userPosts: (filters: PostFilterParams = {}) => [...postKeys.byUser(), filters] as const,
+    detail: (id: number) => [...postKeys.all, 'detail', id] as const,
 };
 
 // Hooks
@@ -56,6 +57,14 @@ export function useMyPosts(
     });
 }
 
+export function usePost(id: number) {
+    return useQuery({
+        queryKey: postKeys.detail(id),
+        queryFn: () => postApi.getPost(id),
+        enabled: !!id, // Only run the query if id is provided
+    });
+}
+
 export function useCreatePost() {
     const queryClient = useQueryClient();
 
@@ -71,6 +80,31 @@ export function useCreatePost() {
             queryClient.invalidateQueries({
                 queryKey: postKeys.byUser(),
             });
+        },
+    });
+}
+
+export function useUpdatePost() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, data, image }: { id: number; data: UpdatePostDto; image?: File }) =>
+            postApi.updatePost(id, data, image),
+        onSuccess: (data) => {
+            // Invalidate the posts list query to refetch the data
+            queryClient.invalidateQueries({
+                queryKey: postKeys.lists(),
+            });
+            // Also invalidate user posts
+            queryClient.invalidateQueries({
+                queryKey: postKeys.byUser(),
+            });
+            // Update the specific post cache
+            if (data.data) {
+                queryClient.invalidateQueries({
+                    queryKey: postKeys.detail(data.data.id),
+                });
+            }
         },
     });
 }

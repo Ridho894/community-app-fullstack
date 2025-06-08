@@ -44,38 +44,11 @@ export const postApi = {
     const params = new URLSearchParams();
     params.append('type', type);
 
-    const url = `/api/posts-by-user?${params.toString()}`;
-    console.log(type, 'type')
-    console.log(url, 'url')
+    const url = `/api/posts/posts-by-user?${params.toString()}`;
+
     try {
       const result = await apiClient<{ data: Post[] }>(url);
       console.log(result, 'result')
-      // Convert the simplified response format to match PostsResponse structure
-      const response: PostsResponse = {
-        data: result.data,
-        meta: {
-          total: result.data.length,
-          page: 1,
-          limit: result.data.length,
-          totalPages: 1,
-          hasNextPage: false,
-          hasPreviousPage: false
-        }
-      };
-
-      return response;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Get posts by a specific user ID
-  async getPostsByUser(userId: number, page: number = 1, limit: number = 10): Promise<PostsResponse> {
-    const url = `/api/posts/user/${userId}`;
-
-    try {
-      const result = await apiClient<{ data: Post[] }>(url);
-
       // Convert the simplified response format to match PostsResponse structure
       const response: PostsResponse = {
         data: result.data,
