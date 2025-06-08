@@ -305,7 +305,9 @@ export class PostService {
     async remove(id: number, userId: number): Promise<{ message: string }> {
         const post = await this.findOne(id);
 
-        if (post.userId !== userId) {
+        // Skip user ownership check if the method is called from admin service
+        // We still keep the check for regular users
+        if (post.userId !== userId && userId !== 0) {
             throw new NotFoundException('Post not found or you do not have permission to delete it');
         }
 

@@ -17,6 +17,11 @@ export const adminKeys = {
         'pending',
         { page, limit },
     ] as const,
+    rejectedPosts: (page?: number, limit?: number) => [
+        ...adminKeys.posts(),
+        'rejected',
+        { page, limit },
+    ] as const,
     comments: (page?: number, limit?: number) => [
         ...adminKeys.all,
         'comments',
@@ -51,6 +56,16 @@ export function useAdminPendingPosts(page = 1, limit = 10) {
     return useQuery({
         queryKey: adminKeys.pendingPosts(page, limit),
         queryFn: () => adminApi.getPendingPosts(page, limit),
+    });
+}
+
+/**
+ * Hook to fetch rejected posts
+ */
+export function useAdminRejectedPosts(page = 1, limit = 10) {
+    return useQuery({
+        queryKey: adminKeys.rejectedPosts(page, limit),
+        queryFn: () => adminApi.getRejectedPosts(page, limit),
     });
 }
 

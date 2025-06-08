@@ -71,6 +71,42 @@ export class NotificationService {
     }
 
     /**
+     * Create a post approval notification
+     */
+    async createPostApprovalNotification(
+        targetUserId: number,
+        adminId: number,
+        postId: number,
+        postTitle: string,
+    ): Promise<Notification> {
+        return this.createNotification({
+            userId: targetUserId,
+            senderId: adminId,
+            type: NotificationType.POST_APPROVED,
+            entityId: postId,
+            message: `approved your post: "${postTitle}"`,
+        });
+    }
+
+    /**
+     * Create a post rejection notification
+     */
+    async createPostRejectionNotification(
+        targetUserId: number,
+        adminId: number,
+        postId: number,
+        postTitle: string,
+    ): Promise<Notification> {
+        return this.createNotification({
+            userId: targetUserId,
+            senderId: adminId,
+            type: NotificationType.POST_REJECTED,
+            entityId: postId,
+            message: `rejected your post: "${postTitle}"`,
+        });
+    }
+
+    /**
      * Get all notifications for a user
      */
     async getUserNotifications(userId: number): Promise<Notification[]> {

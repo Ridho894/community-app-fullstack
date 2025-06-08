@@ -8,6 +8,7 @@ import { Comment } from '../comment/entities/comment.entity';
 import { Post } from '../post/entities/post.entity';
 import { PostResponseDto } from '../post/dto/post-response.dto';
 import { User } from '../user/entities/user.entity';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AdminService {
@@ -15,6 +16,7 @@ export class AdminService {
         private readonly postService: PostService,
         private readonly commentService: CommentService,
         private readonly userService: UserService,
+        private readonly notificationService: NotificationService,
     ) { }
 
     async getStats() {
@@ -71,6 +73,17 @@ export class AdminService {
         return PageDto.create<PostResponseDto>(transformedPosts, total, page, limit);
     }
 
+    async getRejectedPosts(page: number = 1, limit: number = 10) {
+        const [posts, total] = await this.postService.findAllPaginated(
+            PostStatus.REJECTED,
+            page,
+            limit,
+        );
+
+        const transformedPosts = posts.map(post => new PostResponseDto(post));
+        return PageDto.create<PostResponseDto>(transformedPosts, total, page, limit);
+    }
+
     async getComments(page: number = 1, limit: number = 10) {
         const [comments, total] = await this.commentService.findAll(
             page,
@@ -80,8 +93,33 @@ export class AdminService {
         return PageDto.create<Comment>(comments, total, page, limit);
     }
 
-    async updatePostStatus(id: number, status: PostStatus) {
-        return this.postService.updateStatus(id, status);
+    async updatePostStatus(id: number, status: PostStatus, adminId: number) {
+        // Get the post to access user ID and title
+        const post = await this.postService.findOne(id);
+        const postOwnerId = post.userId;
+        const postTitle = post.title;
+
+        // Update post status (for both approved and rejected)
+        const result = await this.postService.updateStatus(id, status);
+
+        // Send appropriate notification based on status
+        if (status === PostStatus.APPROVED) {
+            await this.notificationService.createPostApprovalNotification(
+                postOwnerId,
+                adminId,
+                id,
+                postTitle
+            );
+        } else if (status === PostStatus.REJECTED) {
+            await this.notificationService.createPostRejectionNotification(
+                postOwnerId,
+                adminId,
+                id,
+                postTitle
+            );
+        }
+
+        return result;
     }
 
     async deletePost(id: number) {

@@ -39,6 +39,13 @@ export const adminApi = {
     },
 
     /**
+     * Get rejected posts for admin review
+     */
+    async getRejectedPosts(page: number = 1, limit: number = 10) {
+        return apiClient(`/api/admin/posts/rejected?page=${page}&limit=${limit}`);
+    },
+
+    /**
      * Get all comments for admin review
      */
     async getComments(page: number = 1, limit: number = 10) {

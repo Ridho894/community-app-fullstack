@@ -4,7 +4,9 @@ import { User } from '../../user/entities/user.entity';
 export enum NotificationType {
     LIKE = 'like',
     COMMENT = 'comment',
-    FOLLOW = 'follow'
+    FOLLOW = 'follow',
+    POST_APPROVED = 'post_approved',
+    POST_REJECTED = 'post_rejected'
 }
 
 @Entity({ name: 'notifications' })

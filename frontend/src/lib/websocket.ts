@@ -2,9 +2,18 @@ import { io, Socket } from 'socket.io-client';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 
+// Define notification types
+export enum NotificationType {
+    LIKE = 'like',
+    COMMENT = 'comment',
+    FOLLOW = 'follow',
+    POST_APPROVED = 'post_approved',
+    POST_REJECTED = 'post_rejected'
+}
+
 interface Notification {
     id: number;
-    type: string;
+    type: NotificationType | string;
     senderId: number;
     entityId: number;
     message: string;
