@@ -22,7 +22,8 @@ type TabType = "posts" | "liked";
 export default function ProfilePage() {
   const { logout, user, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>("posts");
-  const [postCount, setPostCount] = useState(0);
+  const [userPostCount, setUserPostCount] = useState(0);
+  const [likedPostCount, setLikedPostCount] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const router = useRouter();
   const { notifications } = useNotifications();
@@ -81,9 +82,21 @@ export default function ProfilePage() {
   // Update post count when data changes
   useEffect(() => {
     if (postsData) {
-      setPostCount(postsData.meta.total);
+      // Update the appropriate count based on active tab
+      if (activeTab === "posts") {
+        setUserPostCount(
+          postsData.data.filter((post: PostType) => post.status !== "rejected")
+            .length
+        );
+      } else {
+        setLikedPostCount(postsData.meta.total);
+      }
     }
-  }, [postsData]);
+  }, [postsData, activeTab]);
+
+  // Get the correct post count to display based on active tab
+  const displayPostCount =
+    activeTab === "posts" ? userPostCount : likedPostCount;
 
   // Handle edit post
   const handleEdit = (postId: number) => {
@@ -138,7 +151,7 @@ export default function ProfilePage() {
                 {/* Stats */}
                 <div className="flex justify-center md:justify-start gap-6 mb-4">
                   <div className="text-center md:text-left">
-                    <span className="font-bold">{postCount}</span>
+                    <span className="font-bold">{displayPostCount}</span>
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       Posts
                     </p>
@@ -221,15 +234,15 @@ export default function ProfilePage() {
                                   onClick={() => handleEdit(post.id)}
                                   variant="secondary"
                                   size="lg"
-                                  className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
+                                  className="rounded-full text-white h-12 w-12 p-0 flex items-center justify-center"
                                 >
-                                  <Edit className="h-4 w-4" />
+                                  <Edit className="h-4 w-4 text-red-500" />
                                 </Button>
                                 <Button
                                   onClick={() => handleDelete(post.id)}
                                   variant="destructive"
                                   size="lg"
-                                  className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
+                                  className="rounded-full text-white h-12 w-12 p-0 flex items-center justify-center"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>

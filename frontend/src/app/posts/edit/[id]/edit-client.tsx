@@ -27,6 +27,7 @@ export function EditPostClient({ id }: EditPostPageProps) {
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isImageChanged, setIsImageChanged] = useState(false);
 
   const router = useRouter();
   const { user } = useAuth();
@@ -59,6 +60,7 @@ export function EditPostClient({ id }: EditPostPageProps) {
     if (file && file.type.startsWith("image/")) {
       setPreview(URL.createObjectURL(file));
       setSelectedFile(file);
+      setIsImageChanged(true);
     }
   }, []);
 
@@ -67,6 +69,7 @@ export function EditPostClient({ id }: EditPostPageProps) {
     if (file && file.type.startsWith("image/")) {
       setPreview(URL.createObjectURL(file));
       setSelectedFile(file);
+      setIsImageChanged(true);
     }
   };
 
@@ -87,11 +90,14 @@ export function EditPostClient({ id }: EditPostPageProps) {
         content: content.trim(),
       };
 
+      // Only pass the image if the image has been changed
+      const imageToUpload = isImageChanged ? selectedFile : undefined;
+
       updatePost(
         {
           id: postId,
           data: postData,
-          image: selectedFile || undefined,
+          ...(imageToUpload && { image: imageToUpload }),
         },
         {
           onSuccess: () => {
@@ -221,6 +227,19 @@ export function EditPostClient({ id }: EditPostPageProps) {
                     alt="Preview"
                     fill
                     className="object-cover rounded-lg"
+                    onClick={(e) => {
+                      // Prevent propagation to parent div
+                      e.stopPropagation();
+                      // Trigger the file input click
+                      const fileInput =
+                        e.currentTarget.parentElement?.parentElement?.querySelector(
+                          'input[type="file"]'
+                        ) as HTMLInputElement;
+                      if (fileInput) {
+                        fileInput.click();
+                      }
+                    }}
+                    style={{ cursor: "pointer" }}
                   />
                 </div>
               ) : (
