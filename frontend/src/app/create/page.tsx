@@ -8,11 +8,19 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { Avatar } from "@/components/ui/avatar";
 import { AvatarImage } from "@radix-ui/react-avatar";
 import { useAuth } from "@/contexts/auth-context";
+import { useCreatePost } from "@/lib/hooks/use-posts";
+import { useRouter } from "next/navigation";
 
 export default function CreatePostPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const router = useRouter();
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -35,6 +43,61 @@ export default function CreatePostPage() {
 
   const { user } = useAuth();
 
+  const { mutate: createPost } = useCreatePost();
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !content.trim()) {
+      setError("Please provide both title and content for your post");
+      return;
+    }
+
+    if (!selectedFile) {
+      setError("Please upload an image for your post");
+      return;
+    }
+
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const postData = {
+        title: title.trim(),
+        content: content.trim(),
+      };
+
+      createPost(
+        {
+          data: postData,
+          image: selectedFile,
+        },
+        {
+          onSuccess: (data) => {
+            router.push("/");
+          },
+          onError: (error: any) => {
+            console.error("Error creating post:", error);
+            if (error.message) {
+              setError(
+                typeof error.message === "string"
+                  ? error.message
+                  : JSON.stringify(error.message)
+              );
+            } else {
+              setError("Failed to create post. Please try again.");
+            }
+            setIsSubmitting(false);
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error creating post:", error);
+      setError("Failed to create post. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <ProtectedRoute>
       <SocialLayout>
@@ -52,10 +115,28 @@ export default function CreatePostPage() {
               <p className="font-medium">{user?.username}</p>
             </div>
 
+            {/* Error message */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 text-red-800 rounded-md">
+                {error}
+              </div>
+            )}
+
+            {/* Title input */}
+            <input
+              type="text"
+              placeholder="Post title"
+              className="w-full bg-transparent border-b border-gray-200 dark:border-gray-700 focus:outline-none mb-4 pb-2 font-medium text-lg"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+
             {/* Text Area */}
             <textarea
               placeholder="What's on your mind?"
               className="w-full border-none bg-transparent focus:outline-none resize-none mb-4 min-h-[120px]"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
             ></textarea>
 
             {/* Upload Preview */}
@@ -80,13 +161,11 @@ export default function CreatePostPage() {
                 onChange={handleChange}
               />
               {preview ? (
-                <div className="mb-4">
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="w-full h-auto rounded-lg"
-                  />
-                </div>
+                <img
+                  src={preview}
+                  alt="Preview"
+                  className="w-full h-full object-cover rounded-lg"
+                />
               ) : (
                 <Button
                   variant="ghost"
@@ -117,7 +196,18 @@ export default function CreatePostPage() {
             </div>
 
             {/* Submit Button */}
-            <Button className="w-full">Post</Button>
+            <Button
+              className="w-full"
+              onClick={handleSubmit}
+              disabled={
+                isSubmitting ||
+                !title.trim() ||
+                !content.trim() ||
+                !selectedFile
+              }
+            >
+              {isSubmitting ? "Creating..." : "Post"}
+            </Button>
           </div>
         </div>
       </SocialLayout>

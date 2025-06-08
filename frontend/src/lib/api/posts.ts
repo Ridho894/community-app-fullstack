@@ -18,34 +18,25 @@ export const postApi = {
     return apiClient<PostResponse>(`/api/posts/${id}`);
   },
 
-  // Create a new post (with or without image)
-  async createPost(postData: CreatePostDto, image?: File): Promise<PostResponse> {
-    // If there's an image, use FormData
-    if (image) {
-      const formData = new FormData();
-      formData.append('title', postData.title);
-      formData.append('content', postData.content);
+  // Create a new post with image (image is mandatory)
+  async createPost(postData: CreatePostDto, image: File): Promise<PostResponse> {
+    // Create a FormData object
+    const formData = new FormData();
 
-      if (postData.tags && postData.tags.length > 0) {
-        formData.append('tags', JSON.stringify(postData.tags));
-      }
+    // Add the text fields
+    formData.append('title', postData.title);
+    formData.append('content', postData.content);
 
-      formData.append('image', image);
-
-      return apiClient<PostResponse>('/api/posts', {
-        method: 'POST',
-        headers: {
-          // Remove the Content-Type header so the browser can set it with the boundary
-          'Content-Type': undefined as any,
-        },
-        body: formData as any,
-      });
+    // Add tags if available
+    if (postData.tags && postData.tags.length > 0) {
+      formData.append('tags', JSON.stringify(postData.tags));
     }
 
-    // No image, use JSON
+    formData.append('image', image);
+
     return apiClient<PostResponse>('/api/posts', {
       method: 'POST',
-      body: JSON.stringify(postData),
+      body: formData,
     });
   },
 

@@ -45,7 +45,7 @@ export function useCreatePost() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ data, image }: { data: CreatePostDto; image?: File }) =>
+        mutationFn: ({ data, image }: { data: CreatePostDto; image: File }) =>
             postApi.createPost(data, image),
         onSuccess: () => {
             // Invalidate the posts list query to refetch the data
