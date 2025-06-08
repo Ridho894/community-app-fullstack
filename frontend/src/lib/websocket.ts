@@ -1,6 +1,9 @@
 import { io, Socket } from 'socket.io-client';
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { notificationKeys } from './hooks/use-notifications';
 
 // Define notification types
 export enum NotificationType {
@@ -15,6 +18,7 @@ interface Notification {
     id: number;
     type: NotificationType | string;
     senderId: number;
+    senderName?: string;
     entityId: number;
     message: string;
     createdAt: Date;
@@ -51,6 +55,25 @@ export const initializeSocket = (token: string) => {
         socket.on('connect_error', (error) => {
             console.error('WebSocket connection error:', error);
         });
+
+        // Set up global notification handler to show toasts
+        socket.on('notification', (notification: Notification) => {
+            console.log('New notification received:', notification);
+
+            // Show toast notification
+            let icon = '🔔';
+            if (notification.type === 'comment') icon = '💬';
+            if (notification.type === 'like') icon = '❤️';
+            if (notification.type === 'post_approved') icon = '✅';
+            if (notification.type === 'post_rejected') icon = '❌';
+
+            toast(notification.message, {
+                description: notification.senderName
+                    ? `From ${notification.senderName}`
+                    : 'You have a new notification',
+                icon,
+            });
+        });
     }
 
     return socket;
@@ -73,6 +96,7 @@ export const useNotifications = () => {
     const { data: session } = useSession();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [connected, setConnected] = useState(false);
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         // Only connect if user is authenticated
@@ -82,6 +106,9 @@ export const useNotifications = () => {
             // Set up notification handler
             socket.on('notification', (notification: Notification) => {
                 setNotifications((prev) => [notification, ...prev]);
+
+                // Invalidate notification queries to refresh data in UI
+                queryClient.invalidateQueries({ queryKey: notificationKeys.all });
             });
 
             // Handle deleted notifications
@@ -95,6 +122,9 @@ export const useNotifications = () => {
                                 notif.entityId === data.entityId)
                     )
                 );
+
+                // Invalidate notification queries
+                queryClient.invalidateQueries({ queryKey: notificationKeys.all });
             });
 
             // Update connection status
@@ -109,7 +139,7 @@ export const useNotifications = () => {
                 socket.off('disconnect');
             };
         }
-    }, [session]);
+    }, [session, queryClient]);
 
     // Function to mark a notification as read
     const markAsRead = async (notificationId: number) => {
@@ -128,6 +158,9 @@ export const useNotifications = () => {
                         notif.id === notificationId ? { ...notif, read: true } : notif
                     )
                 );
+
+                // Invalidate notification queries
+                queryClient.invalidateQueries({ queryKey: notificationKeys.all });
 
                 // Acknowledge on WebSocket
                 if (socket) {
@@ -154,6 +187,9 @@ export const useNotifications = () => {
                 setNotifications((prev) =>
                     prev.map((notif) => ({ ...notif, read: true }))
                 );
+
+                // Invalidate notification queries
+                queryClient.invalidateQueries({ queryKey: notificationKeys.all });
             }
         } catch (error) {
             console.error('Error marking all notifications as read:', error);

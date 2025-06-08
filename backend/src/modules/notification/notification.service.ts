@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { NotificationGateway } from './notification.gateway';
 import { PageDto } from 'src/common/dto/page.dto';
+import { User } from '../user/entities/user.entity';
 
 export interface NotificationPayload {
     userId: number;
@@ -18,6 +19,8 @@ export class NotificationService {
     constructor(
         @InjectRepository(Notification)
         private notificationRepository: Repository<Notification>,
+        @InjectRepository(User)
+        private userRepository: Repository<User>,
         private notificationGateway: NotificationGateway,
     ) { }
 
@@ -25,6 +28,9 @@ export class NotificationService {
      * Create a notification and send it in real-time
      */
     async createNotification(payload: NotificationPayload): Promise<Notification> {
+        // Get sender info for real-time notification
+        const sender = await this.userRepository.findOne({ where: { id: payload.senderId } });
+
         // Save notification to database
         const notification = this.notificationRepository.create({
             userId: payload.userId,
@@ -37,13 +43,14 @@ export class NotificationService {
 
         const savedNotification = await this.notificationRepository.save(notification);
 
-        // Send real-time notification
+        // Send real-time notification with sender info
         this.notificationGateway.sendNotification(
             payload.userId.toString(),
             {
                 id: savedNotification.id,
                 type: payload.type,
                 senderId: payload.senderId,
+                senderName: sender?.username || 'Unknown user',
                 entityId: payload.entityId,
                 message: payload.message,
                 createdAt: savedNotification.createdAt,
@@ -68,6 +75,24 @@ export class NotificationService {
             type: NotificationType.LIKE,
             entityId: postId,
             message: `liked your post: "${postTitle}"`,
+        });
+    }
+
+    /**
+     * Create a comment notification
+     */
+    async createCommentNotification(
+        targetUserId: number,
+        commenterId: number,
+        postId: number,
+        postTitle: string,
+    ): Promise<Notification> {
+        return this.createNotification({
+            userId: targetUserId,
+            senderId: commenterId,
+            type: NotificationType.COMMENT,
+            entityId: postId,
+            message: `commented on your post: "${postTitle}"`,
         });
     }
 

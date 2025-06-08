@@ -6,6 +6,8 @@ import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { User } from '../user/entities/user.entity';
 import { Post } from '../post/entities/post.entity';
+import { NotificationService, NotificationPayload } from '../notification/notification.service';
+import { NotificationType } from '../notification/entities/notification.entity';
 
 @Injectable()
 export class CommentService {
@@ -16,14 +18,19 @@ export class CommentService {
         private readonly postRepository: Repository<Post>,
         @InjectRepository(User)
         private readonly userRepository: Repository<User>,
+        private readonly notificationService: NotificationService,
     ) { }
 
     async create(createCommentDto: CreateCommentDto, user: User): Promise<Comment> {
         const { postId } = createCommentDto;
 
-        // Cek apakah post dengan id tersebut ada
-        const postExists = await this.postRepository.findOne({ where: { id: postId } });
-        if (!postExists) {
+        // Check if the post exists
+        const post = await this.postRepository.findOne({
+            where: { id: postId },
+            relations: ['user']
+        });
+
+        if (!post) {
             throw new NotFoundException(`Post with id ${postId} not found`);
         }
 
@@ -32,9 +39,20 @@ export class CommentService {
             userId: user.id,
         });
 
-        return this.commentRepository.save(comment);
-    }
+        const savedComment = await this.commentRepository.save(comment);
 
+        // Send notification to post owner if the commenter is not the post owner
+        if (post.userId !== user.id) {
+            await this.notificationService.createCommentNotification(
+                post.userId,
+                user.id,
+                postId,
+                post.title
+            );
+        }
+
+        return savedComment;
+    }
 
     async findAllByPostId(postId: number): Promise<Comment[]> {
         return this.commentRepository.find({
