@@ -48,7 +48,7 @@ export const postApi = {
 
     try {
       const result = await apiClient<{ data: Post[] }>(url);
-      console.log(result, 'result')
+
       // Convert the simplified response format to match PostsResponse structure
       const response: PostsResponse = {
         data: result.data,

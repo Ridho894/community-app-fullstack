@@ -14,6 +14,12 @@ export interface PaginatedResponse<T> {
     meta: PaginationMeta;
 }
 
+// Likeable type enum
+export enum LikeableType {
+    POST = 'post',
+    COMMENT = 'comment'
+}
+
 // Post filter parameters
 export interface PostFilterParams {
     page?: number;
@@ -82,6 +88,15 @@ export interface Post {
     commentCount: number;
     comments?: Comment[];
     tags?: string[];
+    likes?: PostLike[];
+}
+
+// Like model
+export interface PostLike {
+    id: number;
+    userId: number;
+    postId: number;
+    createdAt: string;
 }
 
 // Create Post DTO

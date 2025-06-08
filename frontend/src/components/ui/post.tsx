@@ -6,25 +6,44 @@ import { Avatar, AvatarImage } from "./avatar";
 import { Button } from "./button";
 import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Post as PostType, Comment } from "@/types/api";
+import { Post as PostType, Comment, LikeableType } from "@/types/api";
 import { CommentsModal } from "@/components/CommentsModal";
 import { commentKeys, useCommentsByPost } from "@/lib/hooks/use-comments";
+import { useToggleLike } from "@/lib/hooks/use-likes";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface PostProps {
   post: PostType;
 }
 
 export function Post({ post }: PostProps) {
+  const { data: session } = useSession();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likeCount || 0);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+
+  const { mutate: toggleLike, isPending: isLikeLoading } = useToggleLike();
+
   const handleLike = () => {
-    if (liked) {
-      setLikeCount(likeCount - 1);
-    } else {
-      setLikeCount(likeCount + 1);
+    if (!session) {
+      toast.error("Please sign in to like posts");
+      return;
     }
-    setLiked(!liked);
+
+    toggleLike(
+      { type: LikeableType.POST, id: post.id },
+      {
+        onSuccess: (data) => {
+          setLiked(data.liked);
+          setLikeCount((prev) => (data.liked ? prev + 1 : prev - 1));
+        },
+        onError: (error) => {
+          toast.error("Failed to like post. Please try again.");
+          console.error("Like error:", error);
+        },
+      }
+    );
   };
 
   // Format the date
@@ -34,6 +53,17 @@ export function Post({ post }: PostProps) {
 
   // Extract tags from postTags
   const tags = post.postTags?.map((pt) => pt.tag.name) || [];
+
+  // Add a useEffect to check if the post is already liked by the current user
+  useEffect(() => {
+    if (session && post.likes) {
+      // Check if current user ID is in the likes array
+      const isLiked = post.likes.some(
+        (like) => like.userId === parseInt(session.user.id)
+      );
+      setLiked(isLiked);
+    }
+  }, [post.likes, session]);
 
   return (
     <>
@@ -77,6 +107,7 @@ export function Post({ post }: PostProps) {
             size="icon"
             className="h-9 w-9"
             onClick={handleLike}
+            disabled={isLikeLoading}
           >
             <Heart
               className={`h-6 w-6 ${liked ? "fill-red-500 text-red-500" : ""}`}

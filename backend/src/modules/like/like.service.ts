@@ -6,6 +6,7 @@ import { CreateLikeDto } from './dto/create-like.dto';
 import { User } from '../user/entities/user.entity';
 import { Post } from '../post/entities/post.entity';
 import { Comment } from '../comment/entities/comment.entity';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class LikeService {
@@ -16,6 +17,7 @@ export class LikeService {
         private readonly postRepository: Repository<Post>,
         @InjectRepository(Comment)
         private readonly commentRepository: Repository<Comment>,
+        private readonly notificationService: NotificationService,
     ) { }
 
     async create(createLikeDto: CreateLikeDto, user: User): Promise<Like> {
@@ -52,9 +54,14 @@ export class LikeService {
         if (likeableType === LikeableType.POST && postId) {
             newLike.postId = postId;
             newLike.commentId = null;
+
+            // Send notification for post like
+            await this.sendPostLikeNotification(postId, user.id);
         } else if (likeableType === LikeableType.COMMENT && commentId) {
             newLike.commentId = commentId;
             newLike.postId = null;
+
+            // For comments, we could also send notifications (implementation not shown)
         }
 
         return this.likeRepository.save(newLike);
@@ -99,14 +106,17 @@ export class LikeService {
     async toggleLike(createLikeDto: CreateLikeDto, user: User): Promise<{ liked: boolean }> {
         const { likeableType, postId, commentId } = createLikeDto;
 
-        const existingPost = await this.postRepository.findOne({ where: { id: postId } });
-        if (!existingPost) {
-            throw new NotFoundException(`Post with id ${postId} not found`);
-        }
-
-        const existingComment = await this.commentRepository.findOne({ where: { id: commentId } });
-        if (!existingComment) {
-            throw new NotFoundException(`Comment with id ${commentId} not found`);
+        // Validate the existence of the post or comment
+        if (likeableType === LikeableType.POST && postId) {
+            const existingPost = await this.postRepository.findOne({ where: { id: postId } });
+            if (!existingPost) {
+                throw new NotFoundException(`Post with id ${postId} not found`);
+            }
+        } else if (likeableType === LikeableType.COMMENT && commentId) {
+            const existingComment = await this.commentRepository.findOne({ where: { id: commentId } });
+            if (!existingComment) {
+                throw new NotFoundException(`Comment with id ${commentId} not found`);
+            }
         }
 
         // Find existing like
@@ -121,6 +131,27 @@ export class LikeService {
         // If like exists, remove it
         if (existingLike) {
             await this.likeRepository.delete(existingLike.id);
+
+            // If it's a post like, remove any associated notifications
+            if (likeableType === LikeableType.POST && postId) {
+                try {
+                    const post = await this.postRepository.findOne({
+                        where: { id: postId },
+                        relations: ['user'],
+                    });
+
+                    if (post && post.userId !== user.id) {
+                        await this.notificationService.deleteLikeNotification(
+                            post.userId,  // Target user (post owner)
+                            user.id,      // Liking user
+                            postId        // Post ID
+                        );
+                    }
+                } catch (error) {
+                    console.error('Error removing like notification:', error);
+                }
+            }
+
             return { liked: false };
         }
 
@@ -145,5 +176,38 @@ export class LikeService {
                 likeableType: LikeableType.COMMENT,
             },
         });
+    }
+
+    /**
+     * Send a notification when a post is liked
+     */
+    private async sendPostLikeNotification(postId: number, likingUserId: number): Promise<void> {
+        try {
+            // Get the post with its owner information
+            const post = await this.postRepository.findOne({
+                where: { id: postId },
+                relations: ['user'],
+            });
+
+            if (!post) {
+                return;
+            }
+
+            // Don't send notification if user likes their own post
+            if (post.userId === likingUserId) {
+                return;
+            }
+
+            // Send notification to the post owner
+            await this.notificationService.createLikeNotification(
+                post.userId,
+                likingUserId,
+                postId,
+                post.title
+            );
+        } catch (error) {
+            // Log error but don't fail the like operation
+            console.error('Error sending like notification:', error);
+        }
     }
 } 

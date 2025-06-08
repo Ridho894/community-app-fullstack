@@ -178,7 +178,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => handleEdit(post.id)}
                               variant="secondary"
-                              size="icon"
+                              size="lg"
                               className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
                             >
                               <Edit className="h-4 w-4" />
@@ -186,7 +186,7 @@ export default function ProfilePage() {
                             <Button
                               onClick={() => handleDelete(post.id)}
                               variant="destructive"
-                              size="icon"
+                              size="lg"
                               className="rounded-full text-white h-24 w-24 p-0 flex items-center justify-center"
                             >
                               <Trash2 className="h-4 w-4" />

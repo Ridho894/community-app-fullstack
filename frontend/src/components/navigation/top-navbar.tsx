@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { Bell } from "lucide-react";
-import { Button } from "../ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "../ui/tooltip";
+// import { Bell } from "lucide-react";
+// import { Button } from "../ui/button";
+// import {
+//   Tooltip,
+//   TooltipContent,
+//   TooltipProvider,
+//   TooltipTrigger,
+// } from "../ui/tooltip";
+import { NotificationBell } from "../ui/notification/notification-bell";
 
 export function TopNavbar() {
   return (
@@ -20,19 +21,20 @@ export function TopNavbar() {
         </Link>
 
         {/* Right Side - Notification Icon */}
-        <TooltipProvider>
+        <NotificationBell />
+        {/* <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-5 w-5" />
-                {/* <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span> */}
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
               <p>Notifications</p>
             </TooltipContent>
           </Tooltip>
-        </TooltipProvider>
+        </TooltipProvider> */}
       </div>
     </header>
   );
