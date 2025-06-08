@@ -192,19 +192,34 @@ export class PostService {
     }
 
     async findByLike(userId: number): Promise<Post[]> {
-        return this.postRepository
+        const queryBuilder = this.postRepository
             .createQueryBuilder('post')
-            .innerJoin('post.likes', 'like', 'like.userId = :userId', { userId })
+            .innerJoin('likes', 'like', 'like.post_id = post.id AND like.user_id = :userId AND like.likeable_type = :likeableType', {
+                userId,
+                likeableType: 'post'
+            })
             .leftJoinAndSelect('post.user', 'user')
             .leftJoinAndSelect('post.comments', 'comments')
             .leftJoinAndSelect('comments.user', 'commentUser')
             .leftJoinAndSelect('post.likes', 'postLikes')
             .leftJoinAndSelect('post.postTags', 'postTags')
             .leftJoinAndSelect('postTags.tag', 'tag')
-            .orderBy('post.createdAt', 'DESC')
-            .getMany();
-    }
+            .where('post.status = :status', { status: 'approved' })
+            .orderBy('post.createdAt', 'DESC');
 
+        const posts = await queryBuilder.getMany();
+
+        // If there are no posts, let's check if there are any likes for debugging
+        if (posts.length === 0) {
+            const connection = this.postRepository.manager.connection;
+            await connection.query(
+                'SELECT * FROM likes WHERE user_id = ? AND likeable_type = ?',
+                [userId, 'post']
+            );
+        }
+
+        return posts;
+    }
 
     async findByFilter(filterDto: FilterPostDto): Promise<[Post[], number]> {
         const { page = 1, limit = 10, tags, status } = filterDto;
@@ -316,5 +331,45 @@ export class PostService {
         return {
             tags: tags.map(tag => tag.name)
         };
+    }
+
+    async findAllByUser(userId: number): Promise<Post[]> {
+        return this.postRepository.find({
+            where: { userId, status: PostStatus.APPROVED },
+            relations: ['user', 'comments', 'comments.user', 'likes', 'postTags', 'postTags.tag'],
+            order: { createdAt: 'DESC' },
+        });
+    }
+
+    async findByUser(userId: number, page: number = 1, limit: number = 10): Promise<[Post[], number]> {
+        const skip = (page - 1) * limit;
+
+        return this.postRepository.findAndCount({
+            where: { userId, status: PostStatus.APPROVED },
+            relations: ['user', 'comments', 'comments.user', 'likes', 'postTags', 'postTags.tag'],
+            order: { createdAt: 'DESC' },
+            skip,
+            take: limit,
+        });
+    }
+
+    async findByLikePaginated(userId: number, page: number = 1, limit: number = 10): Promise<[Post[], number]> {
+        const skip = (page - 1) * limit;
+
+        const queryBuilder = this.postRepository
+            .createQueryBuilder('post')
+            .innerJoin('post.likes', 'like', 'like.userId = :userId', { userId })
+            .leftJoinAndSelect('post.user', 'user')
+            .leftJoinAndSelect('post.comments', 'comments')
+            .leftJoinAndSelect('comments.user', 'commentUser')
+            .leftJoinAndSelect('post.likes', 'postLikes')
+            .leftJoinAndSelect('post.postTags', 'postTags')
+            .leftJoinAndSelect('postTags.tag', 'tag')
+            .where('post.status = :status', { status: PostStatus.APPROVED })
+            .orderBy('post.createdAt', 'DESC')
+            .skip(skip)
+            .take(limit);
+
+        return queryBuilder.getManyAndCount();
     }
 } 

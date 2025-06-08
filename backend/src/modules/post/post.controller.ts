@@ -9,12 +9,12 @@ import { PageDto } from '../../common/dto/page.dto';
 import { PostResponseDto } from './dto/post-response.dto';
 import { FilterPostDto } from './dto/filter-post.dto';
 
-@Controller('posts')
+@Controller()
 @UseInterceptors(ClassSerializerInterceptor)
 export class PostController {
     constructor(private readonly postService: PostService) { }
     // 
-    @Post()
+    @Post('posts')
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(
         FileInterceptor('image', {
@@ -60,16 +60,9 @@ export class PostController {
         return new PostResponseDto(post);
     }
 
-    @Get()
-    async findAll(@Query() filterDto: FilterPostDto, @Req() req: RequestWithUser) {
-        const { page = 1, limit = 10, type = 'all' } = filterDto;
-
-        if (type === 'like') {
-            console.log(req, 'req')
-            const posts = await this.postService.findByLike(req.user.id);
-            const transformedPosts = posts.map(post => new PostResponseDto(post));
-            return PageDto.create(transformedPosts, posts.length, page, limit);
-        }
+    @Get('posts')
+    async findAll(@Query() filterDto: FilterPostDto) {
+        const { page = 1, limit = 10 } = filterDto;
 
         // If tags are provided, use the filter method
         if (filterDto.tags && filterDto.tags.length > 0) {
@@ -82,6 +75,40 @@ export class PostController {
         const [posts, total] = await this.postService.findAllPaginated(filterDto.status, page, limit);
         const transformedPosts = posts.map(post => new PostResponseDto(post));
         return PageDto.create(transformedPosts, total, page, limit);
+    }
+
+    @Get('posts-by-user')
+    @UseGuards(JwtAuthGuard)
+    async findByUserType(@Query('type') type: 'all' | 'like' | 'user' = 'all', @Req() req: RequestWithUser) {
+        const userId = req.user.id;
+
+        let posts;
+
+        switch (type) {
+            case 'like':
+                // Get all posts liked by the current user
+                posts = await this.postService.findByLike(userId);
+                break;
+            case 'user':
+                // Get all posts created by the current user
+                posts = await this.postService.findAllByUser(userId);
+                break;
+            default:
+                // Get all posts
+                posts = await this.postService.findAll();
+                break;
+        }
+
+        // Add status info for debugging
+        if (posts.length > 0) {
+            const statusCount = posts.reduce((acc, post) => {
+                acc[post.status] = (acc[post.status] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        const transformedPosts = posts.map(post => new PostResponseDto(post));
+        return { data: transformedPosts };
     }
 
     @Get('tags')

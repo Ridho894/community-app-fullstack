@@ -14,11 +14,25 @@ export class CreatePostDto {
     @IsArray()
     @Type(() => String)
     @Transform(({ value }) => {
-        // Handle both array input and comma-separated string input
-        if (typeof value === 'string') {
-            return value.split(',').map(tag => tag.trim());
+        if (value === undefined || value === null) {
+            return undefined;
         }
-        return value;
+
+        // Handle both array input and string input (for JSON string)
+        if (typeof value === 'string') {
+            try {
+                // If it's already an array, just return it
+                if (value.startsWith('[') && value.endsWith(']')) {
+                    return JSON.parse(value);
+                }
+                // If it's a comma-separated string
+                return value.split(',').map(tag => tag.trim()).filter(Boolean);
+            } catch (e) {
+                console.error('Error parsing tags:', e);
+                return [];
+            }
+        }
+        return Array.isArray(value) ? value.filter(Boolean) : [];
     })
-    tags: string[];
+    tags?: string[];
 } 
