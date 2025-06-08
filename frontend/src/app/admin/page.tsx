@@ -4,10 +4,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { useAdminStats } from "@/lib/hooks/use-admin";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function AdminDashboard() {
-  const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin } = useAuth();
   const router = useRouter();
+  const { data: stats, isLoading: isLoadingStats } = useAdminStats();
 
   // Redirect non-admin users to home page
   useEffect(() => {
@@ -21,9 +25,23 @@ export default function AdminDashboard() {
   if (!isAuthenticated || !isAdmin) {
     return null; // Don't render anything while redirecting
   }
+
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <div className="flex gap-4">
+          <Link href="/admin/users">
+            <Button variant="outline">Manage Users</Button>
+          </Link>
+          <Link href="/admin/posts">
+            <Button variant="outline">Manage Posts</Button>
+          </Link>
+          <Link href="/admin/comments">
+            <Button variant="outline">Manage Comments</Button>
+          </Link>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Users Card */}
@@ -32,10 +50,9 @@ export default function AdminDashboard() {
             <p className="text-sm font-medium text-muted-foreground">
               Total Users
             </p>
-            <h2 className="text-3xl font-bold">2,543</h2>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-500">+12.5%</span> from last month
-            </p>
+            <h2 className="text-3xl font-bold">
+              {isLoadingStats ? "..." : stats?.users.total || 0}
+            </h2>
           </div>
         </Card>
 
@@ -45,10 +62,9 @@ export default function AdminDashboard() {
             <p className="text-sm font-medium text-muted-foreground">
               Total Posts
             </p>
-            <h2 className="text-3xl font-bold">8,647</h2>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-500">+8.2%</span> from last month
-            </p>
+            <h2 className="text-3xl font-bold">
+              {isLoadingStats ? "..." : stats?.posts.total || 0}
+            </h2>
           </div>
         </Card>
 
@@ -58,23 +74,21 @@ export default function AdminDashboard() {
             <p className="text-sm font-medium text-muted-foreground">
               Total Comments
             </p>
-            <h2 className="text-3xl font-bold">12,354</h2>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-green-500">+5.7%</span> from last month
-            </p>
+            <h2 className="text-3xl font-bold">
+              {isLoadingStats ? "..." : stats?.comments.total || 0}
+            </h2>
           </div>
         </Card>
 
-        {/* Active Users Card */}
+        {/* Pending Posts Card */}
         <Card className="p-6">
           <div className="flex flex-col space-y-2">
             <p className="text-sm font-medium text-muted-foreground">
-              Active Users
+              Pending Posts
             </p>
-            <h2 className="text-3xl font-bold">1,876</h2>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-red-500">-2.3%</span> from last month
-            </p>
+            <h2 className="text-3xl font-bold">
+              {isLoadingStats ? "..." : stats?.posts.pending || 0}
+            </h2>
           </div>
         </Card>
       </div>

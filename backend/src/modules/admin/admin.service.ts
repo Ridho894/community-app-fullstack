@@ -7,6 +7,7 @@ import { PageDto } from '../../common/dto/page.dto';
 import { Comment } from '../comment/entities/comment.entity';
 import { Post } from '../post/entities/post.entity';
 import { PostResponseDto } from '../post/dto/post-response.dto';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class AdminService {
@@ -47,6 +48,16 @@ export class AdminService {
                 total: totalComments,
             },
         };
+    }
+
+    async getUsers(page: number = 1, limit: number = 10) {
+        // Get users with pagination
+        const allUsers = await this.userService.findAll();
+        const total = allUsers.length;
+        const skip = (page - 1) * limit;
+        const users = allUsers.slice(skip, skip + limit);
+
+        return PageDto.create<User>(users, total, page, limit);
     }
 
     async getPendingPosts(page: number = 1, limit: number = 10) {

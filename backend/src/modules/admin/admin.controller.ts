@@ -14,6 +14,14 @@ export class AdminController {
         return this.adminService.getStats();
     }
 
+    @Get('users')
+    getUsers(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+    ) {
+        return this.adminService.getUsers(page, limit);
+    }
+
     @Get('posts/pending')
     getPendingPosts(
         @Query('page') page: number = 1,
