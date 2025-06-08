@@ -41,20 +41,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <div className="flex gap-4">
-          <Link href="/admin/users">
-            <Button variant="outline">Manage Users</Button>
-          </Link>
-          <Link href="/admin/posts">
-            <Button variant="outline">Manage Posts</Button>
-          </Link>
-          <Link href="/admin/comments">
-            <Button variant="outline">Manage Comments</Button>
-          </Link>
-        </div>
-      </div>
+      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {/* Total Users Card */}
