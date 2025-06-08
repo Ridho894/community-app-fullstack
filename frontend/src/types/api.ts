@@ -128,7 +128,7 @@ export interface Notification {
     type: string;
     title: string;
     message: string;
-    isRead: boolean;
+    read: boolean;
     entityId?: number;
     entityType?: string;
     sender: User;

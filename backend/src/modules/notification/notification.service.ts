@@ -115,6 +115,8 @@ export class NotificationService {
             where: { userId },
             order: { createdAt: 'DESC' },
             relations: ['sender'],
+            skip: (page - 1) * limit,
+            take: limit,
         });
 
         return PageDto.create<Notification>(notifications, total, page, limit);

@@ -5,7 +5,7 @@ import { notificationApi } from '../api/notifications';
 export const notificationKeys = {
     all: ['notifications'] as const,
     lists: () => [...notificationKeys.all, 'list'] as const,
-    list: () => [...notificationKeys.lists()] as const,
+    list: (page?: number, limit?: number) => [...notificationKeys.lists(), { page, limit }] as const,
     counts: () => [...notificationKeys.all, 'counts'] as const,
     unreadCount: () => [...notificationKeys.counts(), 'unread'] as const,
 };
@@ -13,10 +13,10 @@ export const notificationKeys = {
 /**
  * Hook to fetch notifications for the authenticated user
  */
-export function useNotifications() {
+export function useNotifications(page = 1, limit = 10) {
     return useQuery({
-        queryKey: notificationKeys.list(),
-        queryFn: () => notificationApi.getNotifications(),
+        queryKey: notificationKeys.list(page, limit),
+        queryFn: () => notificationApi.getNotifications(page, limit),
         refetchOnWindowFocus: true,
     });
 }
@@ -29,7 +29,7 @@ export function useUnreadNotificationsCount() {
 
     // Calculate unread count from notifications array
     const unreadCount = notifications ?
-        notifications.data.filter(notification => !notification.isRead).length : 0;
+        notifications.data.filter(notification => !notification.read).length : 0;
 
     return {
         data: { count: unreadCount },

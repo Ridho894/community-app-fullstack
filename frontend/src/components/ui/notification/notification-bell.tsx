@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   Bell,
   CheckCircle,
@@ -24,38 +24,75 @@ import Link from "next/link";
 import { Notification } from "@/types/api";
 
 // Get icon based on notification type
+// export const getNotificationIcon = (type: string) => {
+//   switch (type) {
+//     case "like":
+//       return <Heart className="h-4 w-4 text-red-500" />;
+//     case "comment":
+//       return <MessageSquare className="h-4 w-4 text-blue-500" />;
+//     case "follow":
+//       return <UserPlus className="h-4 w-4 text-green-500" />;
+//     case "post_approved":
+//       return <CheckCircle className="h-4 w-4 text-green-500" />;
+//     case "post_rejected":
+//       return <XCircle className="h-4 w-4 text-red-500" />;
+//     default:
+//       return <Bell className="h-4 w-4 text-gray-500" />;
+//   }
+// };
+
 export const getNotificationIcon = (type: string) => {
+  let icon: ReactNode | null = null;
+  let iconColor = "";
+  let bgColor = "";
+
   switch (type) {
     case "like":
-      return <Heart className="h-4 w-4 text-red-500" />;
+      icon = <Heart className="h-4 w-4 text-red-500" />;
+      bgColor = "bg-red-200";
+      break;
     case "comment":
-      return <MessageSquare className="h-4 w-4 text-blue-500" />;
+      icon = <MessageSquare className="h-4 w-4 text-blue-500" />;
+      bgColor = "bg-blue-200";
+      break;
     case "follow":
-      return <UserPlus className="h-4 w-4 text-green-500" />;
+      icon = <UserPlus className="h-4 w-4 text-green-500" />;
+      bgColor = "bg-green-200";
+      break;
     case "post_approved":
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      icon = <CheckCircle className="h-4 w-4 text-green-500" />;
+      bgColor = "bg-green-200";
+      break;
     case "post_rejected":
-      return <XCircle className="h-4 w-4 text-red-500" />;
+      icon = <XCircle className="h-4 w-4 text-red-500" />;
+      bgColor = "bg-red-200";
+      break;
     default:
-      return <Bell className="h-4 w-4 text-gray-500" />;
+      icon = <Bell className="h-4 w-4 text-gray-500" />;
+      bgColor = "bg-gray-200";
+      break;
   }
+
+  return (
+    <div className={`p-2 flex-shrink-0 mt-1 rounded-full ${bgColor}`}>
+      {icon}
+    </div>
+  );
 };
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
-  const { data: notifications, isLoading } = useNotifications();
+  const { data: notifications, isLoading } = useNotifications(1, 4); // Get exactly 4 notifications
   const { mutate: markAsRead } = useMarkNotificationAsRead();
   const { mutate: markAllAsRead, isPending: isMarkingAllRead } =
     useMarkAllNotificationsAsRead();
   const { data: unreadCountData } = useUnreadNotificationsCount();
   const router = useRouter();
-
+  console.log(notifications, "notifications");
   const unreadCount = unreadCountData?.count || 0;
 
-  // Only show the most recent 4 notifications in the dropdown
-  const recentNotifications = notifications
-    ? notifications.data.slice(0, 4)
-    : [];
+  // Show exactly 4 notifications in the dropdown
+  const recentNotifications = notifications?.data || [];
 
   const toggleOpen = () => setOpen(!open);
 
@@ -128,15 +165,13 @@ export function NotificationBell() {
                   <div
                     key={notification.id}
                     className={`px-4 py-3 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${
-                      !notification.isRead
-                        ? "bg-blue-50 dark:bg-blue-900/20"
+                      !notification.read
+                        ? "bg-blue-500 dark:bg-blue-900/20"
                         : ""
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
-                    <div className="flex-shrink-0 mt-1">
-                      {getNotificationIcon(notification.type)}
-                    </div>
+                    {getNotificationIcon(notification.type)}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-900 dark:text-gray-100 font-medium">
                         {notification.message}
