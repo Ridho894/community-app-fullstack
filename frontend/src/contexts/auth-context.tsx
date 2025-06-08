@@ -78,8 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const session = await fetch("/api/auth/session");
         const sessionData = await session.json();
 
-        // Redirect based on role
-        if (sessionData?.user?.role === "admin") {
+        // Check if there's a returnUrl in the URL
+        const params = new URLSearchParams(window.location.search);
+        const returnUrl = params.get("returnUrl");
+
+        // Redirect based on returnUrl or role
+        if (returnUrl) {
+          router.push(decodeURI(returnUrl));
+        } else if (sessionData?.user?.role === "admin") {
           router.push("/admin");
         } else {
           router.push("/");
@@ -131,12 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Clear any errors when component mounts
     setError(null);
-
-    // Redirect to admin page if user is admin
-    if (isAuthenticated && user?.role === "admin") {
-      router.push("/admin");
-    }
-  }, [isAuthenticated, user, router]);
+  }, []);
 
   return (
     <AuthContext.Provider

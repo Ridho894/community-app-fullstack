@@ -22,6 +22,11 @@ export const adminKeys = {
         'rejected',
         { page, limit },
     ] as const,
+    allPosts: (page?: number, limit?: number) => [
+        ...adminKeys.posts(),
+        'all',
+        { page, limit },
+    ] as const,
     comments: (page?: number, limit?: number) => [
         ...adminKeys.all,
         'comments',
@@ -46,6 +51,16 @@ export function useAdminUsers(page = 1, limit = 10) {
     return useQuery({
         queryKey: adminKeys.users(page, limit),
         queryFn: () => adminApi.getUsers(page, limit),
+    });
+}
+
+/**
+ * Hook to fetch all posts for admin
+ */
+export function useAdminAllPosts(page = 1, limit = 10) {
+    return useQuery({
+        queryKey: adminKeys.allPosts(page, limit),
+        queryFn: () => adminApi.getAllPosts(page, limit),
     });
 }
 
@@ -113,6 +128,22 @@ export function useDeletePost() {
 }
 
 /**
+ * Hook to delete a user
+ */
+export function useDeleteUser() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (userId: number) => adminApi.deleteUser(userId),
+        onSuccess: () => {
+            // Invalidate affected queries
+            queryClient.invalidateQueries({ queryKey: adminKeys.stats() });
+            queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+        },
+    });
+}
+
+/**
  * Hook to delete a comment
  */
 export function useDeleteComment() {
@@ -123,7 +154,13 @@ export function useDeleteComment() {
         onSuccess: () => {
             // Invalidate affected queries
             queryClient.invalidateQueries({ queryKey: adminKeys.stats() });
-            queryClient.invalidateQueries({ queryKey: adminKeys.comments() });
+
+            // Force invalidate all comment queries regardless of page/limit params
+            queryClient.invalidateQueries({
+                queryKey: adminKeys.all,
+                exact: false,
+                refetchType: 'all',
+            });
         },
     });
 } 

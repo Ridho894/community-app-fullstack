@@ -32,6 +32,13 @@ export const adminApi = {
     },
 
     /**
+     * Get all posts for admin (regardless of status)
+     */
+    async getAllPosts(page: number = 1, limit: number = 10) {
+        return apiClient(`/api/admin/posts/all?page=${page}&limit=${limit}`);
+    },
+
+    /**
      * Get pending posts that need approval
      */
     async getPendingPosts(page: number = 1, limit: number = 10) {
@@ -67,6 +74,15 @@ export const adminApi = {
      */
     async deletePost(postId: number) {
         return apiClient(`/api/admin/posts/${postId}`, {
+            method: "DELETE",
+        });
+    },
+
+    /**
+     * Delete a user
+     */
+    async deleteUser(userId: number) {
+        return apiClient(`/api/admin/users/${userId}`, {
             method: "DELETE",
         });
     },

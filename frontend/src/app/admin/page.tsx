@@ -7,21 +7,34 @@ import { useRouter } from "next/navigation";
 import { useAdminStats } from "@/lib/hooks/use-admin";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Loader } from "lucide-react";
 
 export default function AdminDashboard() {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const { data: stats, isLoading: isLoadingStats } = useAdminStats();
 
   // Redirect non-admin users to home page
   useEffect(() => {
-    if (isAuthenticated && !isAdmin) {
-      router.push("/");
-    } else if (!isAuthenticated) {
-      router.push("/auth/login");
+    if (!authLoading) {
+      if (isAuthenticated && !isAdmin) {
+        router.push("/");
+      } else if (!isAuthenticated) {
+        router.push("/auth/login");
+      }
     }
-  }, [isAuthenticated, isAdmin, router]);
+  }, [isAuthenticated, isAdmin, authLoading, router]);
 
+  // Show loading state during authentication check
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader className="mr-2 h-12 w-12 animate-spin" />
+      </div>
+    );
+  }
+
+  // Only render if authenticated and admin
   if (!isAuthenticated || !isAdmin) {
     return null; // Don't render anything while redirecting
   }
