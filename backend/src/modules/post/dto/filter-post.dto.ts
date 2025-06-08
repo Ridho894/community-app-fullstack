@@ -39,4 +39,8 @@ export class FilterPostDto {
     @IsInt()
     @Type(() => Number)
     userId?: number;
+
+    @IsOptional()
+    @IsString()
+    keyword?: string;
 } 

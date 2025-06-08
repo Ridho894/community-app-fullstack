@@ -222,7 +222,7 @@ export class PostService {
     }
 
     async findByFilter(filterDto: FilterPostDto): Promise<[Post[], number]> {
-        const { page = 1, limit = 10, tags, status } = filterDto;
+        const { page = 1, limit = 10, tags, status, keyword } = filterDto;
         const skip = (page - 1) * limit;
 
         // Start with a query builder
@@ -243,6 +243,14 @@ export class PostService {
         } else {
             // Default to approved posts only
             queryBuilder.andWhere('post.status = :status', { status: PostStatus.APPROVED });
+        }
+
+        // Add keyword search if provided
+        if (keyword && keyword.trim() !== '') {
+            queryBuilder.andWhere(
+                '(post.title LIKE :keyword OR post.content LIKE :keyword OR user.username LIKE :keyword)',
+                { keyword: `%${keyword.trim()}%` }
+            );
         }
 
         // Add tags filter if provided

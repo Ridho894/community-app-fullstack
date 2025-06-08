@@ -37,6 +37,16 @@ export const postApi = {
     return apiClient<PostsResponse>(`/api/posts?${params.toString()}`);
   },
 
+  // Search posts by keyword
+  async searchPosts(keyword: string, page = 1, limit = 10): Promise<PostsResponse> {
+    const params = new URLSearchParams();
+    params.append('keyword', keyword);
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+
+    return apiClient<PostsResponse>(`/api/posts/search?${params.toString()}`);
+  },
+
   // Get posts for the currently logged in user (for profile page)
   async getMyPosts(filters: PostFilterParams = {}): Promise<PostsResponse> {
     const { type = 'user' } = filters;

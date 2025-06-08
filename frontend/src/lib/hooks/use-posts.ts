@@ -16,6 +16,9 @@ export const postKeys = {
     byUser: () => [...postKeys.all, 'byUser'] as const,
     userPosts: (filters: PostFilterParams = {}) => [...postKeys.byUser(), filters] as const,
     detail: (id: number) => [...postKeys.all, 'detail', id] as const,
+    search: () => [...postKeys.all, 'search'] as const,
+    searchResults: (keyword: string, page = 1, limit = 10) =>
+        [...postKeys.search(), keyword, page, limit] as const,
 };
 
 // Hooks
@@ -106,5 +109,19 @@ export function useUpdatePost() {
                 });
             }
         },
+    });
+}
+
+export function useSearchPosts(
+    keyword: string,
+    page = 1,
+    limit = 10,
+    options?: UseQueryOptions<PostsResponse, Error, PostsResponse, ReturnType<typeof postKeys.searchResults>>
+) {
+    return useQuery({
+        queryKey: postKeys.searchResults(keyword, page, limit),
+        queryFn: () => postApi.searchPosts(keyword, page, limit),
+        enabled: keyword.trim().length > 0, // Only search if keyword is not empty
+        ...options,
     });
 }

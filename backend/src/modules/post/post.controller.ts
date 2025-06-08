@@ -77,6 +77,19 @@ export class PostController {
         return PageDto.create(transformedPosts, total, page, limit);
     }
 
+    @Get('search')
+    async search(@Query() filterDto: FilterPostDto) {
+        const { page = 1, limit = 10, keyword } = filterDto;
+
+        if (!keyword || keyword.trim() === '') {
+            return PageDto.create([], 0, page, limit);
+        }
+
+        const [posts, total] = await this.postService.findByFilter(filterDto);
+        const transformedPosts = posts.map(post => new PostResponseDto(post));
+        return PageDto.create(transformedPosts, total, page, limit);
+    }
+
     @Get('posts-by-user')
     @UseGuards(JwtAuthGuard)
     async findByUserType(@Query('type') type: 'all' | 'like' | 'user' = 'all', @Req() req: RequestWithUser) {
