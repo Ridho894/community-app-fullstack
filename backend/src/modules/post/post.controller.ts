@@ -9,12 +9,12 @@ import { PageDto } from '../../common/dto/page.dto';
 import { PostResponseDto } from './dto/post-response.dto';
 import { FilterPostDto } from './dto/filter-post.dto';
 
-@Controller()
+@Controller('posts')
 @UseInterceptors(ClassSerializerInterceptor)
 export class PostController {
     constructor(private readonly postService: PostService) { }
     // 
-    @Post('posts')
+    @Post()
     @UseGuards(JwtAuthGuard)
     @UseInterceptors(
         FileInterceptor('image', {
@@ -60,7 +60,7 @@ export class PostController {
         return new PostResponseDto(post);
     }
 
-    @Get('posts')
+    @Get()
     async findAll(@Query() filterDto: FilterPostDto) {
         const { page = 1, limit = 10 } = filterDto;
 
@@ -119,7 +119,10 @@ export class PostController {
     @Get(':id')
     async findOne(@Param('id') id: string) {
         const post = await this.postService.findOne(+id);
-        return new PostResponseDto(post);
+        // return new PostResponseDto(post);
+        return {
+            data: new PostResponseDto(post),
+        }
     }
 
     @Patch(':id')
