@@ -5,38 +5,53 @@ import {
     UseQueryOptions,
 } from '@tanstack/react-query';
 import { postApi } from '../api/posts';
-import { CreatePostDto, Post, PostResponse, PostsResponse, UpdatePostDto } from '@/types/api';
+import { CreatePostDto, PostFilterParams, PostsResponse } from '@/types/api';
+import { getSession } from 'next-auth/react';
 
 // Query keys
 export const postKeys = {
     all: ['posts'] as const,
     lists: () => [...postKeys.all, 'list'] as const,
-    list: (filters: { page?: number; limit?: number }) =>
-        [...postKeys.lists(), filters] as const,
-    details: () => [...postKeys.all, 'detail'] as const,
-    detail: (id: number) => [...postKeys.details(), id] as const,
+    list: (filters: PostFilterParams = {}) => [...postKeys.lists(), filters] as const,
+    byUser: () => [...postKeys.all, 'byUser'] as const,
+    userPosts: (filters: PostFilterParams = {}) => [...postKeys.byUser(), filters] as const
 };
 
 // Hooks
 export function usePosts(
-    page: number = 1,
-    limit: number = 10,
+    filters: PostFilterParams = {},
     options?: UseQueryOptions<PostsResponse, Error, PostsResponse, ReturnType<typeof postKeys.list>>
 ) {
     return useQuery({
-        queryKey: postKeys.list({ page, limit }),
-        queryFn: () => postApi.getPosts(page, limit),
+        queryKey: postKeys.list(filters),
+        queryFn: () => postApi.getPosts(filters),
         ...options,
     });
 }
 
-export function usePost(
-    id: number,
-    options?: UseQueryOptions<PostResponse, Error, PostResponse, ReturnType<typeof postKeys.detail>>
+export function useMyPosts(
+    filters: PostFilterParams = {},
+    options?: UseQueryOptions<PostsResponse, Error, PostsResponse, ReturnType<typeof postKeys.userPosts>>
 ) {
     return useQuery({
-        queryKey: postKeys.detail(id),
-        queryFn: () => postApi.getPost(id),
+        queryKey: postKeys.userPosts(filters),
+        queryFn: async () => {
+            try {
+                // Check if user is authenticated first
+                const session = await getSession();
+                if (!session || !session.accessToken) {
+                    throw new Error('Authentication required');
+                }
+
+                const result = await postApi.getMyPosts(filters);
+                return result;
+            } catch (error) {
+                throw error;
+            }
+        },
+        // Add reasonable defaults for query behavior
+        refetchOnWindowFocus: false,
+        staleTime: 1000 * 60 * 5, // 5 minutes
         ...options,
     });
 }
@@ -52,57 +67,9 @@ export function useCreatePost() {
             queryClient.invalidateQueries({
                 queryKey: postKeys.lists(),
             });
-        },
-    });
-}
-
-export function useUpdatePost() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: ({ id, data, image }: { id: number; data: UpdatePostDto; image?: File }) =>
-            postApi.updatePost(id, data, image),
-        onSuccess: (data, variables) => {
-            // Invalidate the specific post detail query
+            // Also invalidate user posts
             queryClient.invalidateQueries({
-                queryKey: postKeys.detail(variables.id),
-            });
-            // Invalidate the posts list query to refetch the data
-            queryClient.invalidateQueries({
-                queryKey: postKeys.lists(),
-            });
-        },
-    });
-}
-
-export function useUpdatePostImage() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: ({ id, image }: { id: number; image: File }) =>
-            postApi.updatePostImage(id, image),
-        onSuccess: (data, variables) => {
-            // Invalidate the specific post detail query
-            queryClient.invalidateQueries({
-                queryKey: postKeys.detail(variables.id),
-            });
-            // Invalidate the posts list query to refetch the data
-            queryClient.invalidateQueries({
-                queryKey: postKeys.lists(),
-            });
-        },
-    });
-}
-
-export function useDeletePost() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: (id: number) => postApi.deletePost(id),
-        onSuccess: () => {
-            // Invalidate the posts list query to refetch the data
-            queryClient.invalidateQueries({
-                queryKey: postKeys.lists(),
+                queryKey: postKeys.byUser(),
             });
         },
     });

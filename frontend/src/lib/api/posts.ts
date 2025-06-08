@@ -1,6 +1,7 @@
 import {
   CreatePostDto,
   Post,
+  PostFilterParams,
   PostResponse,
   PostsResponse,
   UpdatePostDto
@@ -8,9 +9,90 @@ import {
 import { apiClient } from "../api-client";
 
 export const postApi = {
-  // Get posts with pagination
-  async getPosts(page: number = 1, limit: number = 10): Promise<PostsResponse> {
-    return apiClient<PostsResponse>(`/api/posts?page=${page}&limit=${limit}`);
+  // Get posts with pagination and filtering (for homepage)
+  async getPosts(filters: PostFilterParams = {}): Promise<PostsResponse> {
+    const { page = 1, limit = 10, tags, type, userId, status } = filters;
+
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+
+    if (tags && tags.length > 0) {
+      params.append('tags', tags.join(','));
+    }
+
+    if (type) {
+      params.append('type', type);
+    }
+
+    if (status) {
+      params.append('status', status);
+    }
+
+    if (userId) {
+      params.append('userId', userId.toString());
+    }
+
+    return apiClient<PostsResponse>(`/api/posts?${params.toString()}`);
+  },
+
+  // Get posts for the currently logged in user (for profile page)
+  async getMyPosts(filters: PostFilterParams = {}): Promise<PostsResponse> {
+    const { type = 'user' } = filters;
+
+    const params = new URLSearchParams();
+    params.append('type', type);
+
+    const url = `/api/posts-by-user?${params.toString()}`;
+    console.log(type, 'type')
+    console.log(url, 'url')
+    try {
+      const result = await apiClient<{ data: Post[] }>(url);
+      console.log(result, 'result')
+      // Convert the simplified response format to match PostsResponse structure
+      const response: PostsResponse = {
+        data: result.data,
+        meta: {
+          total: result.data.length,
+          page: 1,
+          limit: result.data.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false
+        }
+      };
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get posts by a specific user ID
+  async getPostsByUser(userId: number, page: number = 1, limit: number = 10): Promise<PostsResponse> {
+    const url = `/api/posts/user/${userId}`;
+
+    try {
+      const result = await apiClient<{ data: Post[] }>(url);
+
+      // Convert the simplified response format to match PostsResponse structure
+      const response: PostsResponse = {
+        data: result.data,
+        meta: {
+          total: result.data.length,
+          page: 1,
+          limit: result.data.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false
+        }
+      };
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
   },
 
   // Get a single post by ID

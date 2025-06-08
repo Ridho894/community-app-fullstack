@@ -14,6 +14,16 @@ export interface PaginatedResponse<T> {
     meta: PaginationMeta;
 }
 
+// Post filter parameters
+export interface PostFilterParams {
+    page?: number;
+    limit?: number;
+    tags?: string[];
+    status?: PostStatus;
+    type?: 'all' | 'like' | 'user';
+    userId?: number;
+}
+
 // User model
 export interface User {
     id: number;
