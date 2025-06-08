@@ -4,10 +4,14 @@ import { useState } from "react";
 import { usePosts } from "@/lib/hooks/use-posts";
 import { Post } from "./post";
 import { Loader } from "lucide-react";
+import { PostStatus } from "@/types/api";
 
 export function Feed() {
   const [page, setPage] = useState(1);
-  const { data, isLoading, isError, error } = usePosts(page);
+  const { data, isLoading, isError, error } = usePosts({
+    page: page,
+    status: PostStatus.APPROVED,
+  });
 
   return (
     <div className="w-full mx-auto px-4 sm:px-6 md:px-8">
