@@ -120,3 +120,23 @@ export interface PostResponse {
 
 // API response for multiple posts
 export type PostsResponse = PaginatedResponse<Post>;
+
+// Notification Types
+export interface Notification {
+    id: number;
+    userId: number;
+    type: string;
+    title: string;
+    message: string;
+    isRead: boolean;
+    entityId?: number;
+    entityType?: string;
+    sender: User;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface NotificationsResponse {
+    data: Notification[];
+    meta: PaginationMeta;
+}

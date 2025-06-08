@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from './entities/notification.entity';
 import { NotificationGateway } from './notification.gateway';
+import { PageDto } from 'src/common/dto/page.dto';
 
 export interface NotificationPayload {
     userId: number;
@@ -109,12 +110,14 @@ export class NotificationService {
     /**
      * Get all notifications for a user
      */
-    async getUserNotifications(userId: number): Promise<Notification[]> {
-        return this.notificationRepository.find({
+    async getUserNotifications(userId: number, page: number, limit: number): Promise<PageDto<Notification>> {
+        const [notifications, total] = await this.notificationRepository.findAndCount({
             where: { userId },
             order: { createdAt: 'DESC' },
             relations: ['sender'],
         });
+
+        return PageDto.create<Notification>(notifications, total, page, limit);
     }
 
     /**
