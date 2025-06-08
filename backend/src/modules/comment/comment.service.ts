@@ -14,6 +14,8 @@ export class CommentService {
         private readonly commentRepository: Repository<Comment>,
         @InjectRepository(Post)
         private readonly postRepository: Repository<Post>,
+        @InjectRepository(User)
+        private readonly userRepository: Repository<User>,
     ) { }
 
     async create(createCommentDto: CreateCommentDto, user: User): Promise<Comment> {
@@ -111,7 +113,9 @@ export class CommentService {
     async remove(id: number, userId: number): Promise<{ message: string }> {
         const comment = await this.findOne(id);
 
-        if (comment.userId !== userId) {
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+
+        if (user?.role !== 'admin' && comment.userId !== userId) {
             throw new NotFoundException('Comment not found or you do not have permission to delete it');
         }
 

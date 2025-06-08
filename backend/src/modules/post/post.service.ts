@@ -58,6 +58,9 @@ export class PostService {
 
         const { tags, ...postData } = updatePostDto;
 
+        // When a post is updated, set its status back to pending
+        postData['status'] = PostStatus.PENDING;
+
         // If a new image is uploaded, update the imageUrl
         if (file) {
             // Delete old image if it exists

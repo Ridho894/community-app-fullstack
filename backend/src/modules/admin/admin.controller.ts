@@ -24,6 +24,14 @@ export class AdminController {
         return this.adminService.getUsers(page, limit);
     }
 
+    @Get('posts/all')
+    getAllPosts(
+        @Query('page') page: number = 1,
+        @Query('limit') limit: number = 10,
+    ) {
+        return this.adminService.getAllPosts(page, limit);
+    }
+
     @Get('posts/pending')
     getPendingPosts(
         @Query('page') page: number = 1,
@@ -64,7 +72,7 @@ export class AdminController {
     }
 
     @Delete('comments/:id')
-    deleteComment(@Param('id') id: string) {
-        return this.adminService.deleteComment(+id);
+    deleteComment(@Param('id') id: string, @Req() req: RequestWithUser) {
+        return this.adminService.deleteComment(+id, req.user.id);
     }
 } 

@@ -140,7 +140,23 @@ export class PostController {
 
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('image'))
+    @UseInterceptors(FileInterceptor('image', {
+        fileFilter: (req, file, callback) => {
+            // Only validate if a file is uploaded
+            if (file) {
+                if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+                    return callback(
+                        new HttpException(
+                            'Unsupported file type. Only jpg, jpeg, png, and gif are allowed.',
+                            HttpStatus.BAD_REQUEST
+                        ),
+                        false
+                    );
+                }
+            }
+            callback(null, true);
+        },
+    }))
     async update(
         @Param('id') id: string,
         @Body() updatePostDto: UpdatePostDto,
@@ -153,12 +169,28 @@ export class PostController {
 
     @Post(':id/image')
     @UseGuards(JwtAuthGuard)
-    @UseInterceptors(FileInterceptor('image'))
+    @UseInterceptors(FileInterceptor('image', {
+        fileFilter: (req, file, callback) => {
+            if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+                return callback(
+                    new HttpException(
+                        'Unsupported file type. Only jpg, jpeg, png, and gif are allowed.',
+                        HttpStatus.BAD_REQUEST
+                    ),
+                    false
+                );
+            }
+            callback(null, true);
+        },
+    }))
     async updateImage(
         @Param('id') id: string,
         @Req() req: RequestWithUser,
         @UploadedFile() file: any,
     ) {
+        if (!file) {
+            throw new HttpException('Image is required', HttpStatus.BAD_REQUEST);
+        }
         const post = await this.postService.updateImage(+id, req.user.id, file);
         return new PostResponseDto(post);
     }

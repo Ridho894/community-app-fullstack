@@ -62,6 +62,22 @@ export class AdminService {
         return PageDto.create<User>(users, total, page, limit);
     }
 
+    async getAllPosts(page: number = 1, limit: number = 10) {
+        const [posts, total] = await this.postService.findAllPaginated(null, page, limit);
+
+        return {
+            data: posts,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+                hasNextPage: page < Math.ceil(total / limit),
+                hasPreviousPage: page > 1
+            }
+        };
+    }
+
     async getPendingPosts(page: number = 1, limit: number = 10) {
         const [posts, total] = await this.postService.findAllPaginated(
             PostStatus.PENDING,
@@ -126,7 +142,7 @@ export class AdminService {
         return this.postService.remove(id, 0);
     }
 
-    async deleteComment(id: number) {
-        return this.commentService.remove(id, 0);
+    async deleteComment(id: number, userId: number) {
+        return this.commentService.remove(id, userId);
     }
 } 
